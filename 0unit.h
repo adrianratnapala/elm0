@@ -1,0 +1,33 @@
+#ifndef _0UNIT_H
+#define _0UNIT_H
+
+#include <stdio.h>
+#define CHK(T) do {\
+                        if( !chk( !!(T), __func__, #T) ) return 0; \
+               } while(0)
+
+#define WRN(T) wrn( !!(T), __func__, #T) 
+
+#define PASS() return pass( __func__ )
+
+inline static int chk(int pass, const char *test, const char *text) {
+        if( pass ) 
+                return 1;
+        printf("\033[31m\033[1mFAILED:\033[0m %s <%s>\n", test, text);
+        return 0;
+}
+
+inline static int wrn(int pass, const char *test, const char *text) {
+        if( pass ) 
+                return 1;
+        printf("\033[34m\033[1mWARNING:\033[0m %s <%s>\n", test, text);
+        return 0;
+}
+
+inline static int pass(const char *test) {
+        printf("\033[32m\033[1mpassed:\033[0m %s\n", test);
+        return 1;
+}
+
+#endif /* _0UNIT_H */
+
