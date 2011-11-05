@@ -2,9 +2,14 @@
 
 import sys
 
+def warn(msg, x = None , errno=1, txt='warning') :
+        ERROR="\033[31m\033[1m0run {}: \033[0m".format(txt)
+        if x : sys.stderr.write(ERROR+"{}: {}\n".format(msg, x))
+        else : sys.stderr.write(ERROR+"{}\n".format(msg))
+        return errno
+
 def die(msg, x = None , errno=1) :
-        if x : sys.stderr.write("{}: {}\n".format(msg, x))
-        else : sys.stderr.write("{}\n".format(msg))
+        warn(msg, x, errno, 'error')
         sys.exit(errno)
 
 class Error(Exception) : pass
@@ -28,7 +33,7 @@ def scan_source(filename, def_re = None, cb = (lambda l,m : None) ) :
         If the regex "def_re" is omitted, a default is used that matches lines
         of roughly the form
 
-                [static] int test_SOME_NAME([void])
+                [static] int test_SOME_NAME([signature])
 
         where items in are optional.
         """
@@ -37,7 +42,7 @@ def scan_source(filename, def_re = None, cb = (lambda l,m : None) ) :
         if not def_re :
                 storage_class = r"(static\s+)?"
                 type_and_name = r"int\s+(?P<n>test_[_a-zA-Z0-9]*)";
-                args=r"\((void)?\)";
+                args=r"\(.*\)";
                 def_re = re.compile("\s*" + storage_class + 
                                             type_and_name + "\s*" + 
                                             args );
@@ -87,12 +92,10 @@ def compile_matchers(sources) :
 
         return list(map(compile_one, sources))
 
-match_passed = compile_matchers([
-                ('passed', b'^passed: (?P<n>test.*)')
-        ])
+match_passed = compile_matchers([ ('passed', b'^passed: (?P<n>test.*)') ])
+match_failed = compile_matchers([ ('FAILED', b'^FAILED: (?P<n>test.*)') ])
 
 def run_test(command, matchers = match_passed ) :
-
         out = {}
         for line in lines_without_ansi(command) :
                 for (mname,re,act) in matchers :
@@ -111,8 +114,7 @@ def run_test(command, matchers = match_passed ) :
        
         return out
 
-
-if __name__ == "__main__":
+def run_main(matchers = match_passed) :
         if len(sys.argv) < 2 : 
                 die("{} requires at least a test name as an argument".format(
                         sys.argv[0]))
@@ -131,11 +133,11 @@ if __name__ == "__main__":
                 source_file = test_command[:-5] + '.c'
                 
 
-        try : all = scan_source(source_file)
+        try : source = scan_source(source_file)
         except IOError as x :
                 die("Error reading source file", x, -x.args[0])
 
-        try: ok = run_test(test_command)
+        try: run_results = run_test(test_command, matchers = matchers)
         except OSError as x :
                 die("Error running test", x, x.args[0])
         except IOError as x :
@@ -143,5 +145,41 @@ if __name__ == "__main__":
         except Error as x :
                 die(x)
 
+        return Results(source, run_results)
 
-        print(ok)
+class Results() :
+        def __init__(s, source_tests, run_results) :
+                s.src = source_tests
+                s.res = run_results
+                s.run = set(run_results.keys())
+                s.errno = 0
+       
+        def matched(s, m) :
+                "Returns the set of tests run with output matched by /m/"
+                return set(k for k, v in s.res.items() if v == m)
+
+        def check_run(s, tset) :
+                rem = tset - s.run
+                if rem: s.errno = warn("Tests {} did not run.".format(rem))
+                
+        def check_found(s, tset) :
+                rem = tset - s.src
+                if rem: s.errno = warn("Tests {} were not found in the source.".
+                                        format(rem))
+               
+        def check_matched(s, m, tset) :
+                rem = tset - s.matched(m)
+                if rem: s.errno = warn("Tests {} did not match '{}'.".format(rem, m))
+                
+if __name__ == "__main__":
+        results = run_main()
+
+        results.check_found({'test_malloc_fail'})
+        results.check_found( results.run )
+        results.check_run( results.src )
+        results.check_matched( 'passed', results.run )
+
+        sys.exit(results.errno)
+
+
+
