@@ -80,7 +80,8 @@ Error *init_merror(Error *e, const char *ztext)
 
 // -- Test Error --
 
-int chk_error( Error *err, const ErrorType *type, const char *zvalue )
+static int chk_error( Error *err, const ErrorType *type, 
+                                  const char *zvalue )
 {
         size_t size;
         char *buf;
@@ -98,7 +99,7 @@ int chk_error( Error *err, const ErrorType *type, const char *zvalue )
         return 1;
 }
 
-int test_errors()
+static int test_errors()
 {
         int pre_line = __LINE__;
         Error *e = MERROR("goodbye world!");
@@ -348,7 +349,7 @@ int log_f(Logger *lg,
         return n;
 }
 
-int test_logging()
+static int test_logging()
 {
         static const char *expected_text =
                 "TEST: Hello Logs!\n"
@@ -392,7 +393,7 @@ int test_logging()
         PASS();
 }
 
-int test_debug_logger()
+static int test_debug_logger()
 {
         size_t size;
         char *buf, *expect;
