@@ -3,19 +3,18 @@
 import sys
 
 def die(msg, x = None , errno=1) :
-        if x : 
-                sys.stderr.write("{}: {}\n".format(msg, x))
-        else : 
-                sys.stderr.write("{}\n".format(msg))
+        if x : sys.stderr.write("{}: {}\n".format(msg, x))
+        else : sys.stderr.write("{}\n".format(msg))
         sys.exit(errno)
 
-
-class Fail( Exception ) : 
+class Error(Exception) : pass
+class Fail( Error ) : 
         def __init__( s, msg, errno, command ) :
-                Exception.__init__( s, msg )
+                Error.__init__( s, msg )
                 s.args = (errno, msg, command)
 
-class NoMatch(Exception) : pass 
+class NoMatch(Error) : pass 
+class DuplicateTest(Error) : pass 
 
 def scan_source(filename, def_re = None, cb = (lambda l,m : None) ) :
         """
@@ -74,34 +73,44 @@ def compile_matchers(sources) :
          
         def compile_one(s) :
                 from re import compile
-                if isinstance(s, bytes) :
-                        return compile(s), set(), showok
+                if type(s) != tuple :
+                        raise Exception('match spec must be a tuple of' + 
+                                        'the form  (name, byte-regex, [act])')
 
-                if type(s) != 'tuple' or len(s) != 2 :
-                        raise Exception('bad match spec.')
-                
-                b, f = s
+                n, b, *f = s
+                f = f[0] if f else showok
+
                 if not isinstance(b, bytes) :
                         raise Exception('regex must be bytes.')
 
-                return re.compile(b), set(), f or showok
+                return n, compile(b), f
 
         return list(map(compile_one, sources))
 
-match_passed = compile_matchers([b'^passed: (?P<n>test.*)'])
+match_passed = compile_matchers([
+                ('passed', b'^passed: (?P<n>test.*)')
+        ])
 
 def run_test(command, matchers = match_passed ) :
+
+        out = {}
         for line in lines_without_ansi(command) :
-                for (re, cont, act) in matchers :
+                for (mname,re,act) in matchers :
                         m = re.match(line)
                         if m : break
                 else :
-                        # FIX: test this
                         raise NoMatch("unmatched output line", line)
-                
-                name = m.group('n');
-                cont.add(name)
+
+                name = m.group('n').decode('utf-8');
+                if name in out :
+                        raise DuplicateTest("Test '{}' found twice!".format(
+                                                name))
+
+                out[name] = mname
                 act(name, line)
+       
+        return out
+
 
 if __name__ == "__main__":
         if len(sys.argv) < 2 : 
@@ -131,10 +140,8 @@ if __name__ == "__main__":
                 die("Error running test", x, x.args[0])
         except IOError as x :
                 die("Error reading test output", x, x.args[0])
-        except Fail as x :
-                die("Unexpected test return code", x, +x.args[0])
-        except NoMatch as x :
-                die("Unexpected test output", x, +x.args[0])
+        except Error as x :
+                die(x)
 
 
         print(ok)
