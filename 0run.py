@@ -2,9 +2,13 @@
 
 import sys
 
-def die(msg, x, errno=1) :
-        sys.stderr.write("{}: {}\n".format(msg,x))
-        exit(errno)
+def die(msg, x = None , errno=1) :
+        if x : 
+                sys.stderr.write("{}: {}\n".format(msg, x))
+        else : 
+                sys.stderr.write("{}\n".format(msg))
+        sys.exit(errno)
+
 
 class Fail( Exception ) : 
         def __init__( s, msg, errno, command ) :
@@ -99,13 +103,30 @@ def run_test(command, matchers = match_passed ) :
                 cont.add(name)
                 act(name, line)
 
+if __name__ == "__main__":
+        if len(sys.argv) < 2 : 
+                die("{} requires at least a test name as an argument".format(
+                        sys.argv[0]))
+        if len(sys.argv) > 3 :
+                die("{} takes at most two arguments (test, source)".format(
+                        sys.argv[0]))
 
-for basename in sys.argv[1:] :
-        try : all = scan_source(basename + '.c')
+        test_command = sys.argv[1]
+        if len(sys.argv) == 3 :
+                source_file = sys.argv[2]
+        else :
+                if test_command[-5:] != '-test' :
+                        die("No source file was given and the test " + 
+                            "command '{}' is not of the standard form.".format(
+                                test_command));
+                source_file = test_command[:-5] + '.c'
+                
+
+        try : all = scan_source(source_file)
         except IOError as x :
                 die("Error reading source file", x, -x.args[0])
 
-        try: ok = run_test('./' + basename)
+        try: ok = run_test(test_command)
         except OSError as x :
                 die("Error running test", x, x.args[0])
         except IOError as x :
@@ -115,3 +136,5 @@ for basename in sys.argv[1:] :
         except NoMatch as x :
                 die("Unexpected test output", x, +x.args[0])
 
+
+        print(ok)
