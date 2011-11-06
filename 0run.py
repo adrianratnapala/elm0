@@ -16,6 +16,9 @@ class Error(Exception) : pass
 class Fail( Error ) : 
         def __init__( s, msg, errno, command ) :
                 Error.__init__( s, msg )
+                s.errno = errno
+                s.msg = msg
+                s.command = command
                 s.args = (errno, msg, command)
 
 class NoMatch(Error) : pass 
@@ -56,20 +59,14 @@ def scan_source(filename, def_re = None, cb = (lambda l,m : None) ) :
                         tests.add( m.group('n').strip()  )
         return tests
 
-def lines_without_ansi(command) :
-        from subprocess import Popen, PIPE
+def lines_without_ansi(po) :
         import re
 
         ansi = re.compile(b"\033\[?.*?[@-~]")
         endl = re.compile(b"\r?\n")
-        po = Popen(command, stdout=PIPE)
-        with po:
-                for line in po.stdout :
-                       yield endl.sub( b'', ansi.sub(b'', line ) )
+        for line in po.stdout :
+               yield endl.sub( b'', ansi.sub(b'', line ) )
 
-        errno = po.wait()
-        if errno :
-                raise Fail("test program failed", errno, command) 
 
 def compile_matchers(sources) :
         def showok(name, line) :
@@ -92,12 +89,12 @@ def compile_matchers(sources) :
 
         return list(map(compile_one, sources))
 
-match_passed = compile_matchers([ ('passed', b'^passed: (?P<n>test.*)') ])
-match_failed = compile_matchers([ ('FAILED', b'^FAILED: (?P<n>test.*)') ])
+match_passed = compile_matchers([ ('passed', b'^passed: (?P<n>test\S*)') ])
+match_failed = compile_matchers([ ('FAILED', b'^FAILED: (?P<n>test\S*)') ])
 
-def run_test(command, matchers = match_passed ) :
+def scan_output(po, matchers = match_passed ) :
         out = {}
-        for line in lines_without_ansi(command) :
+        for line in lines_without_ansi(po) :
                 for (mname,re,act) in matchers :
                         m = re.match(line)
                         if m : break
@@ -111,10 +108,32 @@ def run_test(command, matchers = match_passed ) :
 
                 out[name] = mname
                 act(name, line)
-       
+
+      
         return out
 
-def run_main(matchers = match_passed) :
+class Runner :
+        matchers = match_passed
+        def __init__(s, command, source) :
+                from subprocess import Popen, PIPE
+                s.command = command
+                s.source = source
+                s.popen = Popen(s.command, stdout=PIPE)
+
+        # any one of these might be overriden
+        def scan_source(s) : return scan_source(s.source)
+        def scan_output(s) : 
+                return scan_output(s.popen, s.matchers)
+        def run(s) : 
+                out = s.scan_output()
+                errno = s.popen.wait()
+                if errno :
+                        raise Fail("test program failed", errno, command) 
+                return out 
+
+                
+
+def run_main(RunnerClass = Runner) :
         if len(sys.argv) < 2 : 
                 die("{} requires at least a test name as an argument".format(
                         sys.argv[0]))
@@ -132,12 +151,13 @@ def run_main(matchers = match_passed) :
                                 test_command));
                 source_file = test_command[:-5] + '.c'
                 
+        r = RunnerClass(test_command, source_file)
 
-        try : source = scan_source(source_file)
+        try : source = r.scan_source()
         except IOError as x :
                 die("Error reading source file", x, -x.args[0])
 
-        try: run_results = run_test(test_command, matchers = matchers)
+        try: run_results = r.run()
         except OSError as x :
                 die("Error running test", x, x.args[0])
         except IOError as x :
@@ -170,16 +190,41 @@ class Results() :
         def check_matched(s, m, tset) :
                 rem = tset - s.matched(m)
                 if rem: s.errno = warn("Tests {} did not match '{}'.".format(rem, m))
+
                 
-if __name__ == "__main__":
+if __name__ == "__vain__":
         results = run_main()
 
-        results.check_found({'test_malloc_fail'})
         results.check_found( results.run )
         results.check_run( results.src )
         results.check_matched( 'passed', results.run )
-
+        
         sys.exit(results.errno)
 
+class Fail_Runner(Runner) :
+        matchers = match_passed + match_failed
+
+        def run(s) :
+                out = s.scan_output()
+                errno = s.popen.wait()
+                        
+                # FIX: this should be os.errno.ENOMEM
+                if errno == 1 :
+                        return out
+                if errno == 0 :
+                        raise Fail("test program should have failed "
+                                   "but did not", -1, s.command)
+                raise Fail("test program failed but not with ENOMEM", 
+                                errno, s.command) 
+
+if __name__ == "__main__":
+        results = run_main(Fail_Runner)
+
+        xfail = {'test_logging'}
+        results.check_found( results.run )
+        results.check_run( results.src )
+        results.check_matched( 'passed', results.run - xfail )
+        
+        sys.exit(results.errno)
 
 
