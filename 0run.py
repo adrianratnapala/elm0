@@ -120,25 +120,26 @@ match_failed = compile_matchers([ ('FAILED', b'^FAILED: (?P<n>test\S*)') ])
 
 def scan_output(po, matchers = match_passed ) :
         out = {}
+        err = []
         for line in lines_without_ansi(po) :
                 if not line.strip() : continue
                 for (mname,re,act) in matchers :
                         m = re.match(line)
                         if m : break
                 else :  
-                        # FIX: we should somehow note the error and carry on
-                        raise NoMatch("unmatched output line", line)
+                        err.append(NoMatch("unmatched output line", line))
+                        continue
 
                 name = m.group('n').decode('utf-8');
                 if name in out :
-                        raise DuplicateTest("Test '{}' found twice!".format(
-                                                name))
+                        err.append( DuplicateTest(
+                                "Test '{}' found twice!".format( name)),
+                                (name, mname) )
 
                 out[name] = mname
                 act(name, line)
-
       
-        return out
+        return out, err
 
 # runner -----------------------------------------------------
 
@@ -189,13 +190,15 @@ def cli_scan_source(r) :
                 die("Error reading source file", x, -x.args[0])
 
 def cli_scan_output(r) :
-        try: return r.scan_output()
+        try:  # FIX: test this!
+                out, err = r.scan_output()
+                if not err : return out
+                for x in err : warn(x)
+                die("Errors found scanning output")
         except OSError as x :
                 die("Error running test", x, x.args[0])
         except IOError as x :
                 die("Error reading test output", x, x.args[0])
-        except Error as x :
-                die(x)
 
 
 def run_main(RunnerClass = Runner) :
