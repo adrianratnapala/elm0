@@ -155,14 +155,15 @@ def run_main(RunnerClass = Runner) :
                             "command '{}' is not of the standard form.".format(
                                 test_command));
                 source_file = test_command[:-5] + '.c'
-                
-        r = RunnerClass(test_command, source_file)
+        return test_command, source_file
 
-        try : source = r.scan_source()
+def cli_scan(r) :
+        try : return r.scan_source()
         except IOError as x :
                 die("Error reading source file", x, -x.args[0])
 
-        try: run_results = r.run()
+def cli_run(r) :
+        try: return r.run()
         except OSError as x :
                 die("Error running test", x, x.args[0])
         except IOError as x :
@@ -170,7 +171,13 @@ def run_main(RunnerClass = Runner) :
         except Error as x :
                 die(x)
 
+
+def run_main(RunnerClass = Runner) :
+        r = RunnerClass(*parse_argv())
+        source          = cli_scan(r)
+        run_results     = cli_run(r)
         return Results(source, run_results)
+
 
 class Results() :
         def __init__(s, source_tests, run_results) :
