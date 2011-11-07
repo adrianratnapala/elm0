@@ -64,7 +64,7 @@ def lines_without_ansi(po) :
 
         ansi = re.compile(b"\033\[?.*?[@-~]")
         endl = re.compile(b"\r?\n")
-        for line in po.stdout :
+        for line in po :
                yield endl.sub( b'', ansi.sub(b'', line ) )
 
 
@@ -95,10 +95,12 @@ match_failed = compile_matchers([ ('FAILED', b'^FAILED: (?P<n>test\S*)') ])
 def scan_output(po, matchers = match_passed ) :
         out = {}
         for line in lines_without_ansi(po) :
+                if not line.strip() : continue
                 for (mname,re,act) in matchers :
                         m = re.match(line)
                         if m : break
-                else :
+                else :  
+                        # FIX: we should somehow note the error and carry on
                         raise NoMatch("unmatched output line", line)
 
                 name = m.group('n').decode('utf-8');
@@ -118,17 +120,20 @@ class Runner :
                 from subprocess import Popen, PIPE
                 s.command = command
                 s.source = source
-                s.popen = Popen(s.command, stdout=PIPE)
+                s.popen = Popen(s.command, stdout=PIPE, stderr=PIPE)
 
         # any one of these might be overriden
         def scan_source(s) : return scan_source(s.source)
-        def scan_output(s) : 
-                return scan_output(s.popen, s.matchers)
+        def scan_output(s, po) : 
+                return scan_output(po,  s.matchers)
         def run(s) : 
-                out = s.scan_output()
+                sout, serr = s.popen.communicate()
+                out = s.scan_output(sout.split(b'\n'))
+                if serr != b'' :
+                        raise Fail("test program wrote to stderr", -1, s.command)
                 errno = s.popen.wait()
                 if errno :
-                        raise Fail("test program failed", errno, command) 
+                        raise Fail("test program failed", errno, s.command) 
                 return out 
 
                 
@@ -192,7 +197,7 @@ class Results() :
                 if rem: s.errno = warn("Tests {} did not match '{}'.".format(rem, m))
 
                 
-if __name__ == "__vain__":
+if __name__ == "__main__":
         results = run_main()
 
         results.check_found( results.run )
