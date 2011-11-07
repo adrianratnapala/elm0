@@ -27,7 +27,6 @@ class NoMatch(Error) : pass
 class DuplicateTest(Error) : pass 
 
 # util -------------------------------------------------------
-
 def lines_without_ansi(po) :
         import re
 
@@ -35,6 +34,27 @@ def lines_without_ansi(po) :
         endl = re.compile(b"\r?\n")
         for line in po :
                yield endl.sub( b'', ansi.sub(b'', line ) )
+
+# data gathering ---------------------------------------------
+
+def Maker(base=object) : # turns a function into a class with only a constructor
+        def dec(init) :
+                class cls() :
+                        __doc__=init.__doc__
+                        __init__ = init
+                cls.__name__=init.__name__
+                return cls
+        return dec
+
+@Maker()
+def RunData(s, command, source) :
+        from subprocess import Popen, PIPE
+        s.command = command
+        s.source = source
+        popen = Popen(s.command, stdout=PIPE, stderr=PIPE)
+
+        s.out, s.err = popen.communicate()
+        s.errno = popen.wait()
 
 # source -----------------------------------------------------
 def scan_source(filename, def_re = None, cb = (lambda l,m : None) ) :
@@ -125,24 +145,21 @@ def scan_output(po, matchers = match_passed ) :
 class Runner :
         matchers = match_passed
         def __init__(s, command, source) :
-                from subprocess import Popen, PIPE
-                s.command = command
-                s.source = source
-                s.popen = Popen(s.command, stdout=PIPE, stderr=PIPE)
+                s.data = RunData(command, source)
+                s.check_output()
+                s.lines = s.data.out.split(b'\n')
 
         # any one of these might be overriden
-        def scan_source(s) : return scan_source(s.source)
-        def scan_output(s, po) : 
-                return scan_output(po,  s.matchers)
-        def run(s) : 
-                sout, serr = s.popen.communicate()
-                out = s.scan_output(sout.split(b'\n'))
-                if serr != b'' :
-                        raise Fail("test program wrote to stderr", -1, s.command)
-                errno = s.popen.wait()
-                if errno :
-                        raise Fail("test program failed", errno, s.command) 
-                return out 
+        def scan_source(s) : return scan_source(s.data.source)
+        def scan_output(s) : return scan_output(s.lines, s.matchers)
+        def check_output(s):
+                if s.data.err != b'' :
+                        raise Fail("test program wrote to stderr", 
+                                        -1, s.data.command)
+                if s.data.errno :
+                        raise Fail("test program failed", 
+                                s.data.errno, s.data.command) 
+
 
                 
 # CLI --------------------------------------------------------
@@ -166,13 +183,13 @@ def parse_argv():
                 source_file = test_command[:-5] + '.c'
         return test_command, source_file
 
-def cli_scan(r) :
+def cli_scan_source(r) :
         try : return r.scan_source()
         except IOError as x :
                 die("Error reading source file", x, -x.args[0])
 
-def cli_run(r) :
-        try: return r.run()
+def cli_scan_output(r) :
+        try: return r.scan_output()
         except OSError as x :
                 die("Error running test", x, x.args[0])
         except IOError as x :
@@ -183,8 +200,8 @@ def cli_run(r) :
 
 def run_main(RunnerClass = Runner) :
         r = RunnerClass(*parse_argv())
-        source          = cli_scan(r)
-        run_results     = cli_run(r)
+        source          = cli_scan_source(r)
+        run_results     = cli_scan_output(r)
         return Results(source, run_results)
 
 
