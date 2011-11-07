@@ -233,7 +233,7 @@ class Results() :
                 if rem: s.errno = warn("Tests {} did not match '{}'.".format(rem, m))
 
                 
-if __name__ == "__main__":
+if __name__ == "__vain__":
         results = run_main()
 
         results.check_found( results.run )
@@ -243,28 +243,43 @@ if __name__ == "__main__":
         sys.exit(results.errno)
 
 class Fail_Runner(Runner) :
-        matchers = match_passed + match_failed
+        matchers = match_passed + match_failed  # FIX: cargo cult
 
-        def run(s) :
-                out = s.scan_output()
-                errno = s.popen.wait()
-                        
+        # FIX: should be "in elm"
+        err_matchers = compile_matchers ([
+                ('NOMEM', br'^NOMEM \(inelm.c:(?P<n>test_malloc+)'),
+                ('LOGFAILED', br'^LOGFAILED \(inelm.c:(?P<n>test_logging)\)'),
+                ('LOGFAILED', br'^LOGFAILED \(inelm.c:(?P<n>test_debug_logger)\)'),
+        ])
+
+
+        def scan_output(s) : 
+                out, oe = scan_output(s.lines, s.matchers)
+                err, ee = scan_output(s.data.err.split(b'\n'), s.err_matchers)
+
+                # some keys will be in both err and out.
+                # we don't check for this, because it turns out to be normal.
+
+                out.update(err)
+                return out, oe + ee;
+
+        def check_output(s) :
                 # FIX: this should be os.errno.ENOMEM
-                if errno == 1 :
-                        return out
-                if errno == 0 :
+                if s.data.errno == 1 :
+                        return 
+                if s.data.errno == 0 :
                         raise Fail("test program should have failed "
-                                   "but did not", -1, s.command)
+                                   "but did not", -1, s.data.command)
                 raise Fail("test program failed but not with ENOMEM", 
-                                errno, s.command) 
+                                errno, s.data.command) 
 
 if __name__ == "__main__":
         results = run_main(Fail_Runner)
 
-        xfail = {'test_logging'}
+        no_pass = {'test_logging', 'test_malloc', 'test_debug_logger'}
         results.check_found( results.run )
         results.check_run( results.src )
-        results.check_matched( 'passed', results.run - xfail )
+        results.check_matched( 'passed', results.run - no_pass )
         
         sys.exit(results.errno)
 
