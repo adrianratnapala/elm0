@@ -2,6 +2,8 @@
 
 import sys
 
+# errors -----------------------------------------------------
+
 def warn(msg, x = None , errno=1, txt='warning') :
         ERROR="\033[31m\033[1m0run {}: \033[0m".format(txt)
         if x : sys.stderr.write(ERROR+"{}: {}\n".format(msg, x))
@@ -24,6 +26,17 @@ class Fail( Error ) :
 class NoMatch(Error) : pass 
 class DuplicateTest(Error) : pass 
 
+# util -------------------------------------------------------
+
+def lines_without_ansi(po) :
+        import re
+
+        ansi = re.compile(b"\033\[?.*?[@-~]")
+        endl = re.compile(b"\r?\n")
+        for line in po :
+               yield endl.sub( b'', ansi.sub(b'', line ) )
+
+# source -----------------------------------------------------
 def scan_source(filename, def_re = None, cb = (lambda l,m : None) ) :
         """
         Scans a named source file for lines matching the regex /def_re/.  This
@@ -59,14 +72,7 @@ def scan_source(filename, def_re = None, cb = (lambda l,m : None) ) :
                         tests.add( m.group('n').strip()  )
         return tests
 
-def lines_without_ansi(po) :
-        import re
-
-        ansi = re.compile(b"\033\[?.*?[@-~]")
-        endl = re.compile(b"\r?\n")
-        for line in po :
-               yield endl.sub( b'', ansi.sub(b'', line ) )
-
+# output scanning --------------------------------------------
 
 def compile_matchers(sources) :
         def showok(name, line) :
@@ -114,6 +120,8 @@ def scan_output(po, matchers = match_passed ) :
       
         return out
 
+# runner -----------------------------------------------------
+
 class Runner :
         matchers = match_passed
         def __init__(s, command, source) :
@@ -137,8 +145,9 @@ class Runner :
                 return out 
 
                 
+# CLI --------------------------------------------------------
 
-def run_main(RunnerClass = Runner) :
+def parse_argv():
         if len(sys.argv) < 2 : 
                 die("{} requires at least a test name as an argument".format(
                         sys.argv[0]))
