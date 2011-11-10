@@ -233,9 +233,17 @@ class Results() :
                 if rem: s.errno = warn("Tests {} were not found in the source.".
                                         format(rem))
                
-        def check_matched(s, m, tset) :
-                rem = tset - s.matched(m)
-                if rem: s.errno = warn("Tests {} did not match '{}'.".format(rem, m))
+        def check_matched(s, m, tset, strict=True) :
+                mset = s.matched(m)
+                rem = tset - mset
+                if rem: s.errno = warn("Tests {} did not match '{}'.".
+                                format(rem, m))
+                if not strict :
+                        return
+                
+                rem = mset - tset
+                if rem: s.errno = warn("Tests {} matched '{}' unexpectedly.".
+                                format(rem, m))
 
                 
 if __name__ == "__vain__":
