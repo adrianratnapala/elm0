@@ -121,9 +121,12 @@ match_failed = compile_matchers([ ('FAILED', b'^FAILED: (?P<n>test\S*)') ])
 def scan_output(po, matchers = match_passed ) :
         out = {}
         err = []
+        # m=match name, s=set of names per mname, r=regex,  a = callback ("act")
+        msra = [ (m, out.setdefault(m, set()), r, a) for m, r, a in matchers]
+
         for line in lines_without_ansi(po) :
                 if not line.strip() : continue
-                for (mname,re,act) in matchers :
+                for (mname, s,re,act) in msra :
                         m = re.match(line)
                         if m : break
                 else :  
@@ -136,7 +139,7 @@ def scan_output(po, matchers = match_passed ) :
                                 "Test '{}' found twice!".format( name)),
                                 (name, mname) )
 
-                out[name] = mname
+                s.add(name)
                 act(name, line)
       
         return out, err
@@ -210,14 +213,16 @@ def run_main(RunnerClass = Runner) :
 
 class Results() :
         def __init__(s, source_tests, run_results) :
+                from functools import reduce
+                import operator 
                 s.src = source_tests
                 s.res = run_results
-                s.run = set(run_results.keys())
+                s.run = reduce(operator.or_, run_results.values())
                 s.errno = 0
        
         def matched(s, m) :
                 "Returns the set of tests run with output matched by /m/"
-                return set(k for k, v in s.res.items() if v == m)
+                return s.res[m]
 
         def check_run(s, tset) :
                 rem = tset - s.run
