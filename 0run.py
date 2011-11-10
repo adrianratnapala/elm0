@@ -281,11 +281,13 @@ class Fail_Runner(Runner) :
 if __name__ == "__main__":
         results = run_main(Fail_Runner)
 
-        no_pass = {'test_logging', 'test_malloc', 'test_debug_logger'}
         results.check_found( results.run )
         results.check_run( results.src )
-        results.check_matched( 'passed', results.run - no_pass )
-        
+        results.check_matched('passed', results.run - {'test_logging'} )
+        results.check_matched('NOMEM', {'test_malloc'} )
+        results.check_matched('LOGFAILED', {'test_logging','test_debug_logger'})
+                                            
+
         sys.exit(results.errno)
 
 
