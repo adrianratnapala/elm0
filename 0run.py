@@ -193,7 +193,7 @@ def cli_scan_source(r) :
                 die("Error reading source file", x, -x.args[0])
 
 def cli_scan_output(r) :
-        try:  # FIX: test this!
+        try: 
                 out, err = r.scan_output()
                 if not err : return out
                 for x in err : warn(x)
@@ -270,8 +270,7 @@ class Fail_Runner(Runner) :
                 out, oe = scan_output(s.lines, s.matchers)
                 err, ee = scan_output(s.data.err.split(b'\n'), s.err_matchers)
 
-                # some keys will be in both err and out.
-                # we don't check for this, because it turns out to be normal.
+                # FIX: check for duplicates.
 
                 out.update(err)
                 return out, oe + ee;
