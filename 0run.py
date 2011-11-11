@@ -2,6 +2,8 @@
 
 import sys
 
+# errors -----------------------------------------------------
+
 def warn(msg, x = None , errno=1, txt='warning') :
         ERROR="\033[31m\033[1m0run {}: \033[0m".format(txt)
         if x : sys.stderr.write(ERROR+"{}: {}\n".format(msg, x))
@@ -24,6 +26,37 @@ class Fail( Error ) :
 class NoMatch(Error) : pass 
 class DuplicateTest(Error) : pass 
 
+# util -------------------------------------------------------
+def lines_without_ansi(po) :
+        import re
+
+        ansi = re.compile(b"\033\[?.*?[@-~]")
+        endl = re.compile(b"\r?\n")
+        for line in po :
+               yield endl.sub( b'', ansi.sub(b'', line ) )
+
+# data gathering ---------------------------------------------
+
+def Maker(base=object) : # turns a function into a class with only a constructor
+        def dec(init) :
+                class cls() :
+                        __doc__=init.__doc__
+                        __init__ = init
+                cls.__name__=init.__name__
+                return cls
+        return dec
+
+@Maker()
+def RunData(s, command, source) :
+        from subprocess import Popen, PIPE
+        s.command = command
+        s.source = source
+        popen = Popen(s.command, stdout=PIPE, stderr=PIPE)
+
+        s.out, s.err = popen.communicate()
+        s.errno = popen.wait()
+
+# source -----------------------------------------------------
 def scan_source(filename, def_re = None, cb = (lambda l,m : None) ) :
         """
         Scans a named source file for lines matching the regex /def_re/.  This
@@ -59,14 +92,7 @@ def scan_source(filename, def_re = None, cb = (lambda l,m : None) ) :
                         tests.add( m.group('n').strip()  )
         return tests
 
-def lines_without_ansi(po) :
-        import re
-
-        ansi = re.compile(b"\033\[?.*?[@-~]")
-        endl = re.compile(b"\r?\n")
-        for line in po.stdout :
-               yield endl.sub( b'', ansi.sub(b'', line ) )
-
+# output scanning --------------------------------------------
 
 def compile_matchers(sources) :
         def showok(name, line) :
@@ -94,46 +120,52 @@ match_failed = compile_matchers([ ('FAILED', b'^FAILED: (?P<n>test\S*)') ])
 
 def scan_output(po, matchers = match_passed ) :
         out = {}
+        err = []
         for line in lines_without_ansi(po) :
+                if not line.strip() : continue
                 for (mname,re,act) in matchers :
                         m = re.match(line)
                         if m : break
-                else :
-                        raise NoMatch("unmatched output line", line)
+                else :  
+                        err.append(NoMatch("unmatched output line", line))
+                        continue
 
                 name = m.group('n').decode('utf-8');
                 if name in out :
-                        raise DuplicateTest("Test '{}' found twice!".format(
-                                                name))
+                        err.append( DuplicateTest(
+                                "Test '{}' found twice!".format( name)),
+                                (name, mname) )
 
                 out[name] = mname
                 act(name, line)
-
       
-        return out
+        return out, err
+
+# runner -----------------------------------------------------
 
 class Runner :
         matchers = match_passed
         def __init__(s, command, source) :
-                from subprocess import Popen, PIPE
-                s.command = command
-                s.source = source
-                s.popen = Popen(s.command, stdout=PIPE)
+                s.data = RunData(command, source)
+                s.check_output()
+                s.lines = s.data.out.split(b'\n')
 
         # any one of these might be overriden
-        def scan_source(s) : return scan_source(s.source)
-        def scan_output(s) : 
-                return scan_output(s.popen, s.matchers)
-        def run(s) : 
-                out = s.scan_output()
-                errno = s.popen.wait()
-                if errno :
-                        raise Fail("test program failed", errno, command) 
-                return out 
+        def scan_source(s) : return scan_source(s.data.source)
+        def scan_output(s) : return scan_output(s.lines, s.matchers)
+        def check_output(s):
+                if s.data.err != b'' :
+                        raise Fail("test program wrote to stderr", 
+                                        -1, s.data.command)
+                if s.data.errno :
+                        raise Fail("test program failed", 
+                                s.data.errno, s.data.command) 
+
 
                 
+# CLI --------------------------------------------------------
 
-def run_main(RunnerClass = Runner) :
+def parse_argv():
         if len(sys.argv) < 2 : 
                 die("{} requires at least a test name as an argument".format(
                         sys.argv[0]))
@@ -150,22 +182,31 @@ def run_main(RunnerClass = Runner) :
                             "command '{}' is not of the standard form.".format(
                                 test_command));
                 source_file = test_command[:-5] + '.c'
-                
-        r = RunnerClass(test_command, source_file)
+        return test_command, source_file
 
-        try : source = r.scan_source()
+def cli_scan_source(r) :
+        try : return r.scan_source()
         except IOError as x :
                 die("Error reading source file", x, -x.args[0])
 
-        try: run_results = r.run()
+def cli_scan_output(r) :
+        try:  # FIX: test this!
+                out, err = r.scan_output()
+                if not err : return out
+                for x in err : warn(x)
+                die("Errors found scanning output")
         except OSError as x :
                 die("Error running test", x, x.args[0])
         except IOError as x :
                 die("Error reading test output", x, x.args[0])
-        except Error as x :
-                die(x)
 
+
+def run_main(RunnerClass = Runner) :
+        r = RunnerClass(*parse_argv())
+        source          = cli_scan_source(r)
+        run_results     = cli_scan_output(r)
         return Results(source, run_results)
+
 
 class Results() :
         def __init__(s, source_tests, run_results) :
@@ -192,7 +233,7 @@ class Results() :
                 if rem: s.errno = warn("Tests {} did not match '{}'.".format(rem, m))
 
                 
-if __name__ == "__vain__":
+if __name__ == "__main__":
         results = run_main()
 
         results.check_found( results.run )
