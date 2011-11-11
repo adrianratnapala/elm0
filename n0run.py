@@ -158,10 +158,10 @@ class Runner :
         def scan_output(s) : return scan_output(s.lines, s.matchers)
         def check_output(s):
                 if s.data.err != b'' :
-                        raise Fail("test program wrote to stderr", 
+                        yield Fail("test program wrote to stderr", 
                                         -1, s.data.command)
                 if s.data.errno :
-                        raise Fail("test program failed", 
+                        yield Fail("test program failed", 
                                 s.data.errno, s.data.command) 
 
 
@@ -194,7 +194,10 @@ def cli_scan_source(r) :
 
 def cli_scan_output(r) :
         try: 
-                out, err = r.scan_output()
+                err_ck = list( r.check_output() )
+                out, err_sc= r.scan_output()
+                err = err_ck + err_sc
+
                 if not err : return out
                 for x in err : warn(x)
                 die("Errors found scanning output")

@@ -32,9 +32,9 @@ class Fail_Runner(Runner) :
                 if s.data.errno == os.errno.ENOMEM :
                         return 
                 if s.data.errno == 0 :
-                        raise Fail("test program should have failed "
+                        yield Fail("test program should have failed "
                                    "but did not", -1, s.data.command)
-                raise Fail("test program failed but not with ENOMEM", 
+                yield Fail("test program failed but not with ENOMEM", 
                                 s.data.errno, s.data.command) 
 
 if __name__ == "__main__":
