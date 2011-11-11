@@ -10,6 +10,7 @@ elm: errors, logging and malloc.
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <errno.h>
 
 #include <sys/resource.h>
 
@@ -126,7 +127,7 @@ static void emergency_message(const char *pre, LogMeta *meta, const char *post)
         emergency_write(pre);
 
         if(meta) {
-                emergency_write(" (in");
+                emergency_write(" (in ");
                 emergency_write(meta->file);
                 emergency_write(":"); 
                 emergency_write(meta->func);
@@ -452,7 +453,7 @@ void panic_nomem(const char* file, int line, const char *func)
                 func : func,
         };
         emergency_message("NOMEM", &meta, "Out of virtual memory");
-        exit(1);
+        exit(ENOMEM);
 }
 
 void *malloc_or_die(const char* file, int line, const char *func, size_t n)
@@ -558,7 +559,7 @@ static void death_panic(Error *e)
         panic_log.zname = "PANIC!";
 
         log_error( &panic_log, e);
-        exit(1);
+        exit(-1);
 }
 
 void panic(Error *e)
