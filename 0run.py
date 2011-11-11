@@ -121,9 +121,12 @@ match_failed = compile_matchers([ ('FAILED', b'^FAILED: (?P<n>test\S*)') ])
 def scan_output(po, matchers = match_passed ) :
         out = {}
         err = []
+        # m=match name, s=set of names per mname, r=regex,  a = callback ("act")
+        msra = [ (m, out.setdefault(m, set()), r, a) for m, r, a in matchers]
+
         for line in lines_without_ansi(po) :
                 if not line.strip() : continue
-                for (mname,re,act) in matchers :
+                for (mname, s,re,act) in msra :
                         m = re.match(line)
                         if m : break
                 else :  
@@ -136,7 +139,7 @@ def scan_output(po, matchers = match_passed ) :
                                 "Test '{}' found twice!".format( name)),
                                 (name, mname) )
 
-                out[name] = mname
+                s.add(name)
                 act(name, line)
       
         return out, err
@@ -190,7 +193,7 @@ def cli_scan_source(r) :
                 die("Error reading source file", x, -x.args[0])
 
 def cli_scan_output(r) :
-        try:  # FIX: test this!
+        try: 
                 out, err = r.scan_output()
                 if not err : return out
                 for x in err : warn(x)
@@ -210,14 +213,16 @@ def run_main(RunnerClass = Runner) :
 
 class Results() :
         def __init__(s, source_tests, run_results) :
+                from functools import reduce
+                import operator 
                 s.src = source_tests
                 s.res = run_results
-                s.run = set(run_results.keys())
+                s.run = reduce(operator.or_, run_results.values())
                 s.errno = 0
        
         def matched(s, m) :
                 "Returns the set of tests run with output matched by /m/"
-                return set(k for k, v in s.res.items() if v == m)
+                return s.res[m]
 
         def check_run(s, tset) :
                 rem = tset - s.run
@@ -228,12 +233,20 @@ class Results() :
                 if rem: s.errno = warn("Tests {} were not found in the source.".
                                         format(rem))
                
-        def check_matched(s, m, tset) :
-                rem = tset - s.matched(m)
-                if rem: s.errno = warn("Tests {} did not match '{}'.".format(rem, m))
+        def check_matched(s, m, tset, strict=True) :
+                mset = s.matched(m)
+                rem = tset - mset
+                if rem: s.errno = warn("Tests {} did not match '{}'.".
+                                format(rem, m))
+                if not strict :
+                        return
+                
+                rem = mset - tset
+                if rem: s.errno = warn("Tests {} matched '{}' unexpectedly.".
+                                format(rem, m))
 
                 
-if __name__ == "__main__":
+if __name__ == "__vain__":
         results = run_main()
 
         results.check_found( results.run )
@@ -243,29 +256,45 @@ if __name__ == "__main__":
         sys.exit(results.errno)
 
 class Fail_Runner(Runner) :
-        matchers = match_passed + match_failed
+        matchers = match_passed + match_failed  # FIX: cargo cult
 
-        def run(s) :
-                out = s.scan_output()
-                errno = s.popen.wait()
-                        
+        # FIX: should be "in elm"
+        err_matchers = compile_matchers ([
+                ('NOMEM', br'^NOMEM \(inelm.c:(?P<n>test_malloc+)'),
+                ('LOGFAILED', br'^LOGFAILED \(inelm.c:(?P<n>test_logging)\)'),
+                ('LOGFAILED', br'^LOGFAILED \(inelm.c:(?P<n>test_debug_logger)\)'),
+        ])
+
+
+        def scan_output(s) : 
+                out, oe = scan_output(s.lines, s.matchers)
+                err, ee = scan_output(s.data.err.split(b'\n'), s.err_matchers)
+
+                # FIX: check for duplicates.
+
+                out.update(err)
+                return out, oe + ee;
+
+        def check_output(s) :
                 # FIX: this should be os.errno.ENOMEM
-                if errno == 1 :
-                        return out
-                if errno == 0 :
+                if s.data.errno == 1 :
+                        return 
+                if s.data.errno == 0 :
                         raise Fail("test program should have failed "
-                                   "but did not", -1, s.command)
+                                   "but did not", -1, s.data.command)
                 raise Fail("test program failed but not with ENOMEM", 
-                                errno, s.command) 
+                                errno, s.data.command) 
 
 if __name__ == "__main__":
         results = run_main(Fail_Runner)
 
-        xfail = {'test_logging'}
         results.check_found( results.run )
         results.check_run( results.src )
-        results.check_matched( 'passed', results.run - xfail )
-        
+        results.check_matched('passed', results.run - {'test_logging'} )
+        results.check_matched('NOMEM', {'test_malloc'} )
+        results.check_matched('LOGFAILED', {'test_logging','test_debug_logger'})
+                                            
+
         sys.exit(results.errno)
 
 
