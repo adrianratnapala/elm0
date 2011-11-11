@@ -76,20 +76,20 @@ def scan_source(filename, def_re = None, cb = (lambda l,m : None) ) :
         import re
 
         if not def_re :
-                storage_class = r"(static\s+)?"
-                type_and_name = r"int\s+(?P<n>test_[_a-zA-Z0-9]*)";
-                args=r"\(.*\)";
-                def_re = re.compile("\s*" + storage_class + 
-                                            type_and_name + "\s*" + 
-                                            args );
+                storage_class = br"(static\s+)?"
+                type_and_name = br"int\s+(?P<n>test_[_a-zA-Z0-9]*)";
+                args=br"\(.*\)";
+                def_re = re.compile(b"\s*" + storage_class + 
+                                             type_and_name + b"\s*" + 
+                                             args );
 
         tests = set()
-        with open(filename) as  f:
+        with open(filename, "rb") as  f:
                 for line in f:
                         m = def_re.match(line)
                         if not m : continue
                         cb(line, m)
-                        tests.add( m.group('n').strip()  )
+                        tests.add( m.group('n').strip().decode('utf-8')  )
         return tests
 
 # output scanning --------------------------------------------
