@@ -3,13 +3,18 @@
 from n0run import *
 
 class Fail_Runner(Runner) :
-        matchers = match_passed + match_failed  # FIX: cargo cult
+        # FIX: this is cargo-cult programming.
+        # I originally thought that making "matchers" a class attributes was a
+        # clever way of having an extensible matchers list, but still having a
+        # default.  But it is of no use to anyone who overrides scan_output,
+        # since they must name their matchers explicitly anyway.
+        matchers = match_passed + match_failed 
 
         # FIX: should be "in elm"
         err_matchers = compile_matchers ([
-                ('NOMEM', br'^NOMEM \(inelm.c:(?P<n>test_malloc+)'),
-                ('LOGFAILED', br'^LOGFAILED \(inelm.c:(?P<n>test_logging)\)'),
-                ('LOGFAILED', br'^LOGFAILED \(inelm.c:(?P<n>test_debug_logger)\)'),
+                ('NOMEM', br'^NOMEM \(in elm.c:(?P<n>test_malloc+)'),
+                ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>test_logging)\)'),
+                ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>test_debug_logger)\)'),
         ])
 
 
@@ -23,14 +28,14 @@ class Fail_Runner(Runner) :
                 return out, oe + ee;
 
         def check_output(s) :
-                # FIX: this should be os.errno.ENOMEM
-                if s.data.errno == 1 :
+                import os
+                if s.data.errno == os.errno.ENOMEM :
                         return 
                 if s.data.errno == 0 :
                         raise Fail("test program should have failed "
                                    "but did not", -1, s.data.command)
                 raise Fail("test program failed but not with ENOMEM", 
-                                errno, s.data.command) 
+                                s.data.errno, s.data.command) 
 
 if __name__ == "__main__":
         results = run_main(Fail_Runner)
