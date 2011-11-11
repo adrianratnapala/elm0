@@ -29,10 +29,8 @@ Error *elm_mkerr(const char *file, int line, const char *func)
 /* malloc()s an error & fills out the metadata. */
 {
         Error* e = malloc(sizeof(Error));
-        if(!e) {
-                exit(1);
-                // FIX: panic.
-        }
+        if(!e) 
+                panic_nomem(file, line, func);
 
         e->meta.file = file;
         e->meta.line = line;
@@ -290,10 +288,9 @@ Logger *logger_new(const char *zname, FILE *stream)
 /* Create a standard logger that writes to "stream". */
 {
         Logger *lg = malloc( sizeof(Logger) );
-        if( !lg ) {
-                //FIX: panic.
-                return 0;
-        }
+        if( !lg ) 
+                PANIC_NOMEM();
+
         assert(zname);
                 
         lg->stream  = stream;
@@ -662,7 +659,7 @@ int main()
 
         test_try_panic();
         test_recursive_panic();
-        //MPANIC("You can't even fake this failure!");
+        //MPANIC("You can't even fake this failure!"); //FIX
         if(FAKE_FAIL) 
                 runtests_malloc_fail();
         else 
