@@ -507,7 +507,7 @@ static int test_malloc(int n)
 }
 
 
-static int test_malloc_fail(void)
+static int runtests_malloc_fail(void)
 {
         struct rlimit mem_lim;
 
@@ -658,12 +658,13 @@ int main()
         test_logging();
         test_debug_logger();
         LOG_F(null_log, "EEEK!  I'm invisible!  Don't look!");
-        test_malloc(128 * 1024);
 
         test_try_panic();
         test_recursive_panic();
         //MPANIC("You can't even fake this failure!");
         if(FAKE_FAIL) 
-                test_malloc_fail();
+                runtests_malloc_fail();
+        else 
+                test_malloc(128 * 1024);
 }
 #endif //TEST
