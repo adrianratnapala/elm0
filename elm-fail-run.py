@@ -38,7 +38,7 @@ class Fail_Runner(Runner) :
                                 s.data.errno, s.data.command) 
 
 if __name__ == "__main__":
-        runner  = Runner('./elm-fail', 'elm.c')
+        runner  = Fail_Runner('./elm-fail', 'elm.c')
         # FIX: this is boilerplate
         source = cli_scan_source(runner)
         runout = cli_scan_output(runner)
