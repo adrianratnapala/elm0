@@ -650,7 +650,7 @@ static int test_try_panic()
 
 
 #ifdef TEST
-int main() 
+int main(int argc, const char **argv) 
 {
         test_errors();
         test_logging();
@@ -659,7 +659,8 @@ int main()
 
         test_try_panic();
         test_recursive_panic();
-        //MPANIC("You can't even fake this failure!"); //FIX
+        if( argc > 1 && !strcmp(argv[1], "--panic") )
+                MPANIC("The slithy toves!"); //FIX
         if(FAKE_FAIL) 
                 runtests_malloc_fail();
         else 
