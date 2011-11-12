@@ -148,8 +148,9 @@ def scan_output(po, matchers = match_passed ) :
 
 class Runner :
         matchers = match_passed
+        command_pre = ['valgrind', '-q']
         def __init__(s, command, source) :
-                s.data = RunData(command, source)
+                s.data = RunData(s.command_pre + command, source)
                 s.check_output()
                 s.lines = s.data.out.split(b'\n')
 
