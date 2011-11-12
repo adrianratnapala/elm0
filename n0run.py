@@ -166,6 +166,25 @@ class Runner :
                                 s.data.errno, s.data.command)
 
 
+class Fail_Runner(Runner) :
+        matchers = match_passed + match_failed
+
+        def check_output(s) :
+                if s.data.errno == 0 :
+                        s.errno = -1
+                        yield Fail("test program should have failed "
+                                   "but did not", -1, s.data.command)
+
+        def scan_output(s) :
+                out, oe = scan_output(s.lines, s.matchers)
+                err, ee = scan_output(s.data.err.split(b'\n'), s.err_matchers)
+
+                # FIX: check for duplicates.
+
+                out.update(err)
+                return out, oe + ee;
+
+
 
 # CLI --------------------------------------------------------
 
