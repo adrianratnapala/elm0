@@ -150,7 +150,7 @@ class Runner :
         matchers = match_passed
         command_pre = ['valgrind', '-q']
         def __init__(s, command, source) :
-                s.data = RunData(s.command_pre + command, source)
+                s.data = RunData(s.command_pre + list(command), source)
                 s.check_output()
                 s.lines = s.data.out.split(b'\n')
 
@@ -164,6 +164,25 @@ class Runner :
                 if s.data.errno :
                         yield Fail("test program failed",
                                 s.data.errno, s.data.command)
+
+
+class Fail_Runner(Runner) :
+        matchers = match_passed + match_failed
+
+        def check_output(s) :
+                if s.data.errno == 0 :
+                        s.errno = -1
+                        yield Fail("test program should have failed "
+                                   "but did not", -1, s.data.command)
+
+        def scan_output(s) :
+                out, oe = scan_output(s.lines, s.matchers)
+                err, ee = scan_output(s.data.err.split(b'\n'), s.err_matchers)
+
+                # FIX: check for duplicates.
+
+                out.update(err)
+                return out, oe + ee;
 
 
 
@@ -199,12 +218,13 @@ def cli_scan_output(r) :
         except IOError as x :
                 die("Error reading test output", x, x.args[0])
 
-
-def run_main(RunnerClass = Runner) :
-        r = RunnerClass(*parse_argv())
-        source          = cli_scan_source(r)
-        run_results     = cli_scan_output(r)
+def run_main(runner) :
+        source       = cli_scan_source(runner)
+        run_results  = cli_scan_output(runner)
         return Results(source, run_results)
+
+def run_main_argv(RunnerClass = Runner, argv=None) :
+        return run_main(RunnerClass(*parse_argv(argv)))
 
 
 class Results() :
@@ -243,7 +263,7 @@ class Results() :
 
 
 if __name__ == "__main__":
-        results = run_main()
+        results = run_main_argv()
 
         results.check_found( results.run )
         results.check_run( results.src )
