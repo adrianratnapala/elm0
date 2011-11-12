@@ -2,15 +2,15 @@
   elm: errors, logging and malloc.
 
   The elm module provies three commonly used utilities which are conceptually
-  quite different, but can entangle at the impelmentation level.  These 
+  quite different, but can entangle at the impelmentation level.  These
   are:
 errors  - describes error events, and help handle them (for now by exiting the program, but we might do exceptions in future).
 
   logging - writes (log) events to a stdio stream.
 
   malloc  - wrapper for malloc() to allocate memory or die trying.  Never
-            returns anything but success.          
-*/ 
+            returns anything but success.
+*/
 
 #ifndef ELM_H
 #define ELM_H
@@ -33,7 +33,7 @@ struct LogMeta {
 
 /*-- Errors -------------------------------------------------------------------
   Errors are our poor man's version of an exception object.  They are created
-  when some bad event happens, and contain data to describe that event.  
+  when some bad event happens, and contain data to describe that event.
 */
 typedef struct Error Error;
 
@@ -44,12 +44,12 @@ typedef struct Error Error;
 typedef struct ErrorType ErrorType;
 struct ErrorType {
         /* fwrite sends a human readable representation to a stdio stream. */
-        int  (*fwrite)(Error *e, FILE *out); 
+        int  (*fwrite)(Error *e, FILE *out);
         /* cleanup is called once the object is no longer needed.  */
         void (*cleanup)(Error *e);
 };
 
-/* 
+/*
   To define a new error type named "my_error", you need to define those two
   methods, and then define an ErrorType struct which points to them.  Finally
   you need to write a constructor function of the signature *and name*:
@@ -62,7 +62,7 @@ struct ErrorType {
 struct Error {
         const ErrorType *type;  // method table
         void      *data;  // different error types define meanings for this
-        LogMeta    meta;  // type invariant meta data (where & when) 
+        LogMeta    meta;  // type invariant meta data (where & when)
 };
 
 /*
@@ -84,7 +84,7 @@ extern Error *elm_mkerr(const char *file, int line, const char *func);
   Elm has just one predfined error type "merror" (short for "message error"),
   which just wraps a message string.  You can create merror objects with
 
-        ERROR(merror, "some message" ).   
+        ERROR(merror, "some message" ).
 
   you can also use the shortcut:
         MERROR("some messsage")
@@ -113,11 +113,11 @@ extern void error_destroy(Error *e);
 */
 
 /* You can panic using an valid (and non-NULL) error object by calling. */
-extern void panic(Error *e); 
+extern void panic(Error *e);
 
-/* 
+/*
    Or you can create a new error in analogy to ERROR and MERROR, and then
-   immediately panic with it.   
+   immediately panic with it.
 */
 #define PANIC(T, ...) panic(ERROR(T, __VA_ARGS__)) // a new error of type T,
 #define MPANIC(MSG) panic(MERROR(MSG)) // a new message error
@@ -143,12 +143,12 @@ struct PanicReturn {
     be set to the same error.  One you no longer wnat to protect your errors
     this way, call NO_WORRIES.
 
-    A good way to use this  is 
+    A good way to use this  is
 
         PanicReturn ret;
 
         if(ret.error = TRY(ret)) { // the assignment he is redundant, but nice.
-                // handle the error 
+                // handle the error
                 error_destroy(ret.error);     // remember to do this!
                 return -1;
         }
@@ -175,7 +175,7 @@ extern int _panic_set_return(PanicReturn *ret);
 
 /* One common reason to catch serious errors is in unit tests - to see that
    code is throwing them when it should.  Assuming you use 0unit, you
-   can meake these tests cleaner using: 
+   can meake these tests cleaner using:
 */
 #define CHK_PANIC(T, R)\
         {if( (R).error = TRY((R)) ){          \
@@ -213,7 +213,7 @@ typedef struct Logger Logger;
 /*
   Elm defines three loggers, they are always available, without initialisation.
 */
-extern Logger 
+extern Logger
        *null_log,// Log to nowhere, swallows all messages,
        *std_log, // Log to standard output
        *err_log, // Log to standard error
@@ -233,11 +233,11 @@ extern Logger
 extern Logger *logger_new(const char *zname, FILE *stream);
 /*
   which creates a logger that writes to "stream". It's name "zname", is
-  prepended before all output messages (along with some punctuation).  
+  prepended before all output messages (along with some punctuation).
   If "stream" is NULL, you will get a null logger - it will silently ignore all
   messages
-  
-  If you want to include source location metadata in messages, use 
+
+  If you want to include source location metadata in messages, use
 */
 extern Logger *debug_logger_new(const char *zname, FILE *stream);
 
@@ -256,14 +256,14 @@ void logger_destroy(Logger *lg);
 */
 
 #define LOG_F(L,...) log_f(L, __FILE__, __LINE__, __func__,  __VA_ARGS__)
-extern int log_f(Logger *lg, 
+extern int log_f(Logger *lg,
            const char *file,
-           int         line, 
-           const char *func, 
-           const char *msg, 
+           int         line,
+           const char *func,
+           const char *msg,
            ...);
 
-/* 
+/*
    You can also log an error using.  The metadata will come from the error,
    not from the location of the logging call.
  */
