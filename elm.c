@@ -1,6 +1,6 @@
 /* ---------------------------------------------------------------------------
 elm: errors, logging and malloc.
-*/ 
+*/
 
 #define _GNU_SOURCE
 #include <assert.h>
@@ -25,11 +25,11 @@ elm: errors, logging and malloc.
 
 // Errors ---------------------------------------------------------------------
 
-Error *elm_mkerr(const char *file, int line, const char *func) 
+Error *elm_mkerr(const char *file, int line, const char *func)
 /* malloc()s an error & fills out the metadata. */
 {
         Error* e = malloc(sizeof(Error));
-        if(!e) 
+        if(!e)
                 panic_nomem(file, line, func);
 
         e->meta.file = file;
@@ -79,7 +79,7 @@ Error *init_merror(Error *e, const char *ztext)
 
 // -- Test Error --
 
-static int chk_error( Error *err, const ErrorType *type, 
+static int chk_error( Error *err, const ErrorType *type,
                                   const char *zvalue )
 {
         size_t size;
@@ -89,7 +89,7 @@ static int chk_error( Error *err, const ErrorType *type,
         CHK( err->type == type );
         CHK( mstream = open_memstream(&buf, &size) );
         CHK( type->fwrite(err, mstream) == strlen(zvalue) );
-        fclose(mstream); 
+        fclose(mstream);
 
         CHK( size == strlen(zvalue) );
         CHK( !memcmp(zvalue, buf, size) );
@@ -114,7 +114,7 @@ static int test_errors()
 
 // Raw Stderr -----------------------------------------------------------------
 
-static void emergency_write(const char *str) 
+static void emergency_write(const char *str)
 {
         write(2, str, strlen(str));
 }
@@ -127,9 +127,9 @@ static void emergency_message(const char *pre, LogMeta *meta, const char *post)
         if(meta) {
                 emergency_write(" (in ");
                 emergency_write(meta->file);
-                emergency_write(":"); 
+                emergency_write(":");
                 emergency_write(meta->func);
-                emergency_write(")"); 
+                emergency_write(")");
         }
 
         emergency_write(": ");
@@ -142,7 +142,7 @@ static void emergency_message(const char *pre, LogMeta *meta, const char *post)
 
 struct Logger {
         /*Loggers decorate messages, and send them to a stream. Or drop them.*/
-        int  ready;   
+        int  ready;
         FILE *stream;         // the output stream
         const char *zname;    // prefix text emitted before each message
 
@@ -187,11 +187,11 @@ static int log_vprintf(Logger *lg, LogMeta *meta, const char *msg, va_list va)
         init_static_logger(lg);
 
         int nprefix = lg->fwrite_prefix(lg, meta);
-        if ( nprefix <= 0 ) 
+        if ( nprefix <= 0 )
                 goto no_write;
 
         int nbody = vfprintf(lg->stream, msg, va);
-        if ( nbody <= 0 ) 
+        if ( nbody <= 0 )
                 goto no_write;
 
         if ( fputc('\n', lg->stream) == EOF)
@@ -217,17 +217,17 @@ int log_error(Logger *lg, Error *err)
 
         const ErrorType *etype = err->type;
         assert(etype);
-        
+
         if(FAKE_FAIL)
                 goto no_write;
 
         int nprefix = lg->fwrite_prefix(lg, &err->meta);
-        if ( nprefix <= 0 ) 
+        if ( nprefix <= 0 )
                 goto no_write;
 
         // ask the error to write its own text
         int nbody = etype->fwrite(err, lg->stream);
-        if ( nbody <= 0 ) 
+        if ( nbody <= 0 )
                 goto no_write;
 
         if ( fputc('\n', lg->stream) == EOF)
@@ -243,7 +243,7 @@ no_write:
         return -1;
 }
 
-// A handful of builtin loggers are statically allocated. 
+// A handful of builtin loggers are statically allocated.
 static Logger _std_log = {
         ready   : 0,
         stream  : (FILE*)1,
@@ -276,7 +276,7 @@ static Logger _null_log = {
         fwrite_prefix : dbg_prefix,
 };
 
-Logger *std_log = &_std_log, 
+Logger *std_log = &_std_log,
        *err_log = &_err_log,
        *dbg_log = &_dbg_log,
        *null_log = &_null_log;
@@ -288,11 +288,11 @@ Logger *logger_new(const char *zname, FILE *stream)
 /* Create a standard logger that writes to "stream". */
 {
         Logger *lg = malloc( sizeof(Logger) );
-        if( !lg ) 
+        if( !lg )
                 PANIC_NOMEM();
 
         assert(zname);
-                
+
         lg->stream  = stream;
         lg->vprintf = log_vprintf;
         lg->fwrite_prefix = log_prefix;
@@ -322,10 +322,10 @@ void logger_destroy(Logger *lg)
 }
 
 
-int log_f(Logger *lg, 
+int log_f(Logger *lg,
            const char *file,
-           int         line, 
-           const char *func, 
+           int         line,
+           const char *func,
            const char *msg, ...)
 /* Format a message vprintf style, then log it. */
 {
@@ -363,10 +363,10 @@ static int test_logging()
 
         Logger *lg = logger_new("TEST", mstream);
         CHK(lg);
-        
+
         Logger *nlg = logger_new("NULL_TEST", 0);
         CHK(nlg);
-        
+
         CHK( LOG_F(nlg, "Hello Logs!") == 0 );
         CHK( LOG_F(lg, "Hello Logs!") == 18);
         CHK( size == 18 );
@@ -375,7 +375,7 @@ static int test_logging()
         LOG_F(nlg, "Hello Logs #%d!", 2);
         LOG_F(lg, "Hello Logs #%d!", 2);
         CHK( size == 18 + 21 );
-        
+
         Error *e = ERROR(merror, "goodbye world!");
         CHK( log_error(nlg, e) == 0 );
         CHK( log_error(lg, e) == 21 );
@@ -401,7 +401,7 @@ static int test_debug_logger()
 
         Logger *lg = debug_logger_new("DTEST", mstream);
         CHK(lg);
-       
+
         char *text = "Eeek, a (pretend) software bug!";
         int line_p = __LINE__;
         LOG_F(lg, text );
@@ -411,7 +411,7 @@ static int test_debug_logger()
 
         CHK( strlen(expect) == size );
         CHK( !memcmp(expect, buf, size) );
-        
+
         free(expect);
         logger_destroy(lg);
         fclose(mstream);
@@ -485,8 +485,8 @@ static int test_malloc(int n)
         CHK( n > 2048);
         CHK( ttk[0] == 0 );
         CHK( ttk[10] == '5' );
-        
-        for(int k = n - 1024; k < n; k++ ) 
+
+        for(int k = n - 1024; k < n; k++ )
                 CHK( ttk[k] == 0 );
 
         free(ttk);
@@ -549,7 +549,7 @@ int _panic_set_return(PanicReturn *ret)
 }
 
 static void death_panic(Error *e)
-{       
+{
         /*A glorious and righteous hack to hijack the most approriate logger.*/
         init_static_logger(dbg_log); // not strictly needed.
         Logger panic_log = *dbg_log;
@@ -582,7 +582,7 @@ static int chk_recursive_panic(int depth)
 
         if(err = TRY(ret)) {
                 catch_count++;
-                CHK(chk_error(err, merror_type, 
+                CHK(chk_error(err, merror_type,
                         "You've gone too far this time!"));
                 CHK(depth);
                 if(depth > 1)
@@ -596,7 +596,7 @@ static int chk_recursive_panic(int depth)
 
         CHK( chk_recursive_panic(depth+1) == -1 );
         NO_WORRIES(ret);
-        
+
         CHK( depth == 0 );
         CHK( catch_count == 9);
         catch_count = 0;
@@ -611,12 +611,12 @@ static int test_recursive_panic()
         PASS();
 }
 
-static int test_try_panic() 
+static int test_try_panic()
 {
         PanicReturn ret;
         Error *err;
         int failed = 0, succeeded = 0;
-       
+
         // throw an error and catch it.
         if ( err = TRY(ret) ) {
                 CHK( !_panic_return );
@@ -648,9 +648,8 @@ static int test_try_panic()
 
 // -- Main -----------------------------
 
-
 #ifdef TEST
-int main(int argc, const char **argv) 
+int main(int argc, const char **argv)
 {
         test_errors();
         test_logging();
@@ -661,9 +660,9 @@ int main(int argc, const char **argv)
         test_recursive_panic();
         if( argc > 1 && !strcmp(argv[1], "--panic") )
                 MPANIC("The slithy toves!"); //FIX
-        if(FAKE_FAIL) 
+        if(FAKE_FAIL)
                 runtests_malloc_fail();
-        else 
+        else
                 test_malloc(128 * 1024);
 }
 #endif //TEST

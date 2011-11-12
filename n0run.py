@@ -15,7 +15,7 @@ def die(msg, x = None , errno=1) :
         sys.exit(errno)
 
 class Error(Exception) : pass
-class Fail( Error ) : 
+class Fail( Error ) :
         def __init__( s, msg, errno, command ) :
                 Error.__init__( s, msg )
                 s.errno = errno
@@ -23,8 +23,8 @@ class Fail( Error ) :
                 s.command = command
                 s.args = (errno, msg, command)
 
-class NoMatch(Error) : pass 
-class DuplicateTest(Error) : pass 
+class NoMatch(Error) : pass
+class DuplicateTest(Error) : pass
 
 # util -------------------------------------------------------
 def lines_without_ansi(po) :
@@ -79,8 +79,8 @@ def scan_source(filename, def_re = None, cb = (lambda l,m : None) ) :
                 storage_class = br"(static\s+)?"
                 type_and_name = br"int\s+(?P<n>test_[_a-zA-Z0-9]*)";
                 args=br"\(.*\)";
-                def_re = re.compile(b"\s*" + storage_class + 
-                                             type_and_name + b"\s*" + 
+                def_re = re.compile(b"\s*" + storage_class +
+                                             type_and_name + b"\s*" +
                                              args );
 
         tests = set()
@@ -98,11 +98,11 @@ def compile_matchers(sources) :
         def showok(name, line) :
                 from sys import stdout
                 stdout.buffer.write(b'\033[32m\033[1mOK:\033[0m '+line+b'\n')
-         
+
         def compile_one(s) :
                 from re import compile
                 if type(s) != tuple :
-                        raise Exception('match spec must be a tuple of' + 
+                        raise Exception('match spec must be a tuple of' +
                                         'the form  (name, byte-regex, [act])')
 
                 n, b, *f = s
@@ -129,7 +129,7 @@ def scan_output(po, matchers = match_passed ) :
                 for (mname, s,re,act) in msra :
                         m = re.match(line)
                         if m : break
-                else :  
+                else :
                         err.append(NoMatch("unmatched output line", line))
                         continue
 
@@ -141,15 +141,16 @@ def scan_output(po, matchers = match_passed ) :
 
                 s.add(name)
                 act(name, line)
-      
+
         return out, err
 
 # runner -----------------------------------------------------
 
 class Runner :
         matchers = match_passed
+        command_pre = ['valgrind', '-q']
         def __init__(s, command, source) :
-                s.data = RunData(command, source)
+                s.data = RunData(s.command_pre + command, source)
                 s.check_output()
                 s.lines = s.data.out.split(b'\n')
 
@@ -158,34 +159,26 @@ class Runner :
         def scan_output(s) : return scan_output(s.lines, s.matchers)
         def check_output(s):
                 if s.data.err != b'' :
-                        yield Fail("test program wrote to stderr", 
+                        yield Fail("test program wrote to stderr",
                                         -1, s.data.command)
                 if s.data.errno :
-                        yield Fail("test program failed", 
-                                s.data.errno, s.data.command) 
+                        yield Fail("test program failed",
+                                s.data.errno, s.data.command)
 
 
-                
+
 # CLI --------------------------------------------------------
 
-def parse_argv():
-        if len(sys.argv) < 2 : 
-                die("{} requires at least a test name as an argument".format(
-                        sys.argv[0]))
-        if len(sys.argv) > 3 :
-                die("{} takes at most two arguments (test, source)".format(
-                        sys.argv[0]))
+def parse_argv(argv=None):
+        argv = argv or sys.argv
 
-        test_command = sys.argv[1]
-        if len(sys.argv) == 3 :
-                source_file = sys.argv[2]
-        else :
-                if test_command[-5:] != '-test' :
-                        die("No source file was given and the test " + 
-                            "command '{}' is not of the standard form.".format(
-                                test_command));
-                source_file = test_command[:-5] + '.c'
-        return test_command, source_file
+        if(len(argv) < 3) :
+                die("usage: {} source_file test_command "
+                    "... args to test command ...")
+        prog, source, *command = argv
+        assert(len(command) >= 1)
+
+        return command, source
 
 def cli_scan_source(r) :
         try : return r.scan_source()
@@ -193,7 +186,7 @@ def cli_scan_source(r) :
                 die("Error reading source file", x, -x.args[0])
 
 def cli_scan_output(r) :
-        try: 
+        try:
                 err_ck = list( r.check_output() )
                 out, err_sc= r.scan_output()
                 err = err_ck + err_sc
@@ -217,12 +210,12 @@ def run_main(RunnerClass = Runner) :
 class Results() :
         def __init__(s, source_tests, run_results) :
                 from functools import reduce
-                import operator 
+                import operator
                 s.src = source_tests
                 s.res = run_results
                 s.run = reduce(operator.or_, run_results.values())
                 s.errno = 0
-       
+
         def matched(s, m) :
                 "Returns the set of tests run with output matched by /m/"
                 return s.res[m]
@@ -230,12 +223,12 @@ class Results() :
         def check_run(s, tset) :
                 rem = tset - s.run
                 if rem: s.errno = warn("Tests {} did not run.".format(rem))
-                
+
         def check_found(s, tset) :
                 rem = tset - s.src
                 if rem: s.errno = warn("Tests {} were not found in the source.".
                                         format(rem))
-               
+
         def check_matched(s, m, tset, strict=True) :
                 mset = s.matched(m)
                 rem = tset - mset
@@ -243,17 +236,17 @@ class Results() :
                                 format(rem, m))
                 if not strict :
                         return
-                
+
                 rem = mset - tset
                 if rem: s.errno = warn("Tests {} matched '{}' unexpectedly.".
                                 format(rem, m))
 
-                
+
 if __name__ == "__main__":
         results = run_main()
 
         results.check_found( results.run )
         results.check_run( results.src )
         results.check_matched( 'passed', results.run )
-        
+
         sys.exit(results.errno)

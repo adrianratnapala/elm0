@@ -10,7 +10,7 @@ test: $(ALL)
 
 again: clean all
 
-%-fail.o: %.c 
+%-fail.o: %.c
 	$(CC) $(CFLAGS) -DTEST=1 -DFAKE_FAIL=1 -c -o $@ $^
 
 %-test.o: %.c
@@ -25,9 +25,9 @@ clean:
 	rm -f $(ALL)
 	rm *.o
 
-test: elm-test elm-fail
-	./n0run.py ./elm-test
+run: elm-test elm-fail
+	./n0run.py elm.c ./elm-test
 	./elm-fail-run.py
-        
+
 
 elm*.o: 0unit.h elm.h

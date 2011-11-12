@@ -8,7 +8,7 @@ class Fail_Runner(Runner) :
         # clever way of having an extensible matchers list, but still having a
         # default.  But it is of no use to anyone who overrides scan_output,
         # since they must name their matchers explicitly anyway.
-        matchers = match_passed + match_failed 
+        matchers = match_passed + match_failed
 
         # FIX: should be "in elm"
         err_matchers = compile_matchers ([
@@ -18,7 +18,7 @@ class Fail_Runner(Runner) :
         ])
 
 
-        def scan_output(s) : 
+        def scan_output(s) :
                 out, oe = scan_output(s.lines, s.matchers)
                 err, ee = scan_output(s.data.err.split(b'\n'), s.err_matchers)
 
@@ -30,15 +30,15 @@ class Fail_Runner(Runner) :
         def check_output(s) :
                 import os
                 if s.data.errno == os.errno.ENOMEM :
-                        return 
+                        return
                 if s.data.errno == 0 :
                         yield Fail("test program should have failed "
                                    "but did not", -1, s.data.command)
-                yield Fail("test program failed but not with ENOMEM", 
-                                s.data.errno, s.data.command) 
+                yield Fail("test program failed but not with ENOMEM",
+                                s.data.errno, s.data.command)
 
 if __name__ == "__main__":
-        runner  = Fail_Runner('./elm-fail', 'elm.c')
+        runner  = Fail_Runner(['./elm-fail'], 'elm.c')
         # FIX: this is boilerplate
         source = cli_scan_source(runner)
         runout = cli_scan_output(runner)
@@ -49,7 +49,7 @@ if __name__ == "__main__":
         results.check_matched('passed', results.run - {'test_logging'} )
         results.check_matched('NOMEM', {'test_malloc'} )
         results.check_matched('LOGFAILED', {'test_logging','test_debug_logger'})
-                                            
+
 
         sys.exit(results.errno)
 
