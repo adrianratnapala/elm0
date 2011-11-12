@@ -17,10 +17,24 @@ class Fail_Runner(Runner) :
                 ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>test_debug_logger)\)'),
         ])
 
+        panic_matchers = compile_matchers ([
+                ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>main)\):'+
+                              br' Error logging error.'),
+        ])
+
+
+
+        def __init__(s, panic, command, source) :
+                s.panic = panic
+                command = [command, '--panic'] if panic  else [command]
+                Runner.__init__(s, command, source ) ;
 
         def scan_output(s) :
+                errm = s.err_matchers
+                if s.panic : errm += s.panic_matchers
+
                 out, oe = scan_output(s.lines, s.matchers)
-                err, ee = scan_output(s.data.err.split(b'\n'), s.err_matchers)
+                err, ee = scan_output(s.data.err.split(b'\n'), errm)
 
                 # FIX: check for duplicates.
 
@@ -29,20 +43,42 @@ class Fail_Runner(Runner) :
 
         def check_output(s) :
                 import os
-                if s.data.errno == os.errno.ENOMEM :
-                        return
                 if s.data.errno == 0 :
+                        s.errno = -1
                         yield Fail("test program should have failed "
                                    "but did not", -1, s.data.command)
-                yield Fail("test program failed but not with ENOMEM",
-                                s.data.errno, s.data.command)
+
+                if s.panic :
+                        if s.data.errno == 255 : return
+                        error = "test program failed but not with 255"
+                else :
+                        if s.data.errno == os.errno.ENOMEM : return
+                        error = "test program failed but not with ENOMEM"
+
+                yield Fail(error, s.data.errno, s.data.command)
 
 if __name__ == "__main__":
-        runner  = Fail_Runner(['./elm-fail'], 'elm.c')
-        # FIX: this is boilerplate
-        source = cli_scan_source(runner)
-        runout = cli_scan_output(runner)
-        results = Results(source, runout)
+        from sys import stdout, stderr
+        print('elm-fail with panic ...')
+        prunner  = Fail_Runner(True, './elm-fail', 'elm.c')
+        presults = run_main(prunner)
+        results = presults
+
+        results.check_found( results.run - {'main'} )
+        results.check_run( results.src - {'test_malloc'} )
+        results.check_matched('passed', results.run - {'test_logging', 'main'} )
+        results.check_matched('NOMEM', set() )
+        results.check_matched('LOGFAILED', {'test_logging',
+                                            'test_debug_logger',
+                                            'main'})
+        stderr.flush()
+        stdout.flush()
+
+
+        print('elm-fail with out panic ...')
+        prunner  = Fail_Runner(True, './elm-fail', 'elm.c')
+        runner  = Fail_Runner(False, './elm-fail', 'elm.c')
+        results = run_main(runner)
 
         results.check_found( results.run )
         results.check_run( results.src )
@@ -50,7 +86,7 @@ if __name__ == "__main__":
         results.check_matched('NOMEM', {'test_malloc'} )
         results.check_matched('LOGFAILED', {'test_logging','test_debug_logger'})
 
+        stderr.flush()
+        stdout.flush()
 
-        sys.exit(results.errno)
-
-
+        sys.exit(results.errno or presults.errno)
