@@ -168,24 +168,16 @@ class Runner :
 
 # CLI --------------------------------------------------------
 
-def parse_argv():
-        if len(sys.argv) < 2 :
-                die("{} requires at least a test name as an argument".format(
-                        sys.argv[0]))
-        if len(sys.argv) > 3 :
-                die("{} takes at most two arguments (test, source)".format(
-                        sys.argv[0]))
+def parse_argv(argv=None):
+        argv = argv or sys.argv
 
-        test_command = sys.argv[1]
-        if len(sys.argv) == 3 :
-                source_file = sys.argv[2]
-        else :
-                if test_command[-5:] != '-test' :
-                        die("No source file was given and the test " +
-                            "command '{}' is not of the standard form.".format(
-                                test_command));
-                source_file = test_command[:-5] + '.c'
-        return test_command, source_file
+        if(len(argv) < 3) :
+                die("usage: {} source_file test_command "
+                    "... args to test command ...")
+        prog, source, *command = argv
+        assert(len(command) >= 1)
+
+        return command, source
 
 def cli_scan_source(r) :
         try : return r.scan_source()
