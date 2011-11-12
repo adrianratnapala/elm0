@@ -77,6 +77,7 @@ Error *init_merror(Error *e, const char *ztext)
         return e;
 }
 
+#ifdef TEST
 // -- Test Error --
 
 static int chk_error( Error *err, const ErrorType *type,
@@ -111,6 +112,7 @@ static int test_errors()
         error_destroy(e);
         PASS();
 }
+#endif
 
 // Raw Stderr -----------------------------------------------------------------
 
@@ -347,6 +349,7 @@ int log_f(Logger *lg,
         return n;
 }
 
+#ifdef TEST
 static int test_logging()
 {
         static const char *expected_text =
@@ -419,6 +422,7 @@ static int test_debug_logger()
 
         PASS();
 }
+#endif
 
 
 // Malloc ---------------------------------------------------------------------
