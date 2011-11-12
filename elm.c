@@ -10,6 +10,7 @@ elm: errors, logging and malloc.
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <errno.h>
 
 #include <sys/resource.h>
 
@@ -28,10 +29,8 @@ Error *elm_mkerr(const char *file, int line, const char *func)
 /* malloc()s an error & fills out the metadata. */
 {
         Error* e = malloc(sizeof(Error));
-        if(!e) {
-                exit(1);
-                // FIX: panic.
-        }
+        if(!e) 
+                panic_nomem(file, line, func);
 
         e->meta.file = file;
         e->meta.line = line;
@@ -126,7 +125,7 @@ static void emergency_message(const char *pre, LogMeta *meta, const char *post)
         emergency_write(pre);
 
         if(meta) {
-                emergency_write(" (in");
+                emergency_write(" (in ");
                 emergency_write(meta->file);
                 emergency_write(":"); 
                 emergency_write(meta->func);
@@ -289,10 +288,9 @@ Logger *logger_new(const char *zname, FILE *stream)
 /* Create a standard logger that writes to "stream". */
 {
         Logger *lg = malloc( sizeof(Logger) );
-        if( !lg ) {
-                //FIX: panic.
-                return 0;
-        }
+        if( !lg ) 
+                PANIC_NOMEM();
+
         assert(zname);
                 
         lg->stream  = stream;
@@ -452,7 +450,7 @@ void panic_nomem(const char* file, int line, const char *func)
                 func : func,
         };
         emergency_message("NOMEM", &meta, "Out of virtual memory");
-        exit(1);
+        exit(ENOMEM);
 }
 
 void *malloc_or_die(const char* file, int line, const char *func, size_t n)
@@ -558,7 +556,7 @@ static void death_panic(Error *e)
         panic_log.zname = "PANIC!";
 
         log_error( &panic_log, e);
-        exit(1);
+        exit(-1);
 }
 
 void panic(Error *e)
@@ -652,7 +650,7 @@ static int test_try_panic()
 
 
 #ifdef TEST
-int main() 
+int main(int argc, const char **argv) 
 {
         test_errors();
         test_logging();
@@ -661,7 +659,8 @@ int main()
 
         test_try_panic();
         test_recursive_panic();
-        //MPANIC("You can't even fake this failure!");
+        if( argc > 1 && !strcmp(argv[1], "--panic") )
+                MPANIC("The slithy toves!"); //FIX
         if(FAKE_FAIL) 
                 runtests_malloc_fail();
         else 
