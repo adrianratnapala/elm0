@@ -40,8 +40,7 @@ class Elm_Fail_Runner(Fail_Runner) :
                         yield Fail("test program failed but not with ENOMEM",
                                 s.data.errno, s.data.command)
 
-
-class Elm_Panic_Runner(Fail_Runner) :
+class Panic_Runner(Fail_Runner) :
         def __init__(s, command, source) :
                 Fail_Runner.__init__(s, [command, '--panic'], source ) ;
 
@@ -54,7 +53,16 @@ class Elm_Panic_Runner(Fail_Runner) :
                                 s.data.errno, s.data.command)
 
 
-class Elm_Fail_Panic_Runner(Elm_Panic_Runner) :
+class Elm_Panic_Runner(Panic_Runner) :
+        # FIX: the different errors do not have very consistent formats
+        err_matchers = Elm_Fail_Runner.err_matchers + compile_matchers ([
+                ('PANIC', br'^PANIC! \(elm.c:[0-9]+ in (?P<n>main)\):'+
+                          br' The slithy toves!'),
+                ])
+
+
+
+class Elm_Fail_Panic_Runner(Panic_Runner) :
         err_matchers = Elm_Fail_Runner.err_matchers + compile_matchers ([
                 ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>main)\):'+
                               br' Error logging error.'),
@@ -65,6 +73,19 @@ class Elm_Fail_Panic_Runner(Elm_Panic_Runner) :
 
 if __name__ == "__main__":
         from sys import stdout, stderr
+
+        print('elm-test with panic ...')
+        trunner  = Elm_Panic_Runner('./elm-test', 'elm.c')
+        tresults = run_main(trunner)
+        results = tresults
+
+        results.check_found( results.run - {'main'} )
+        results.check_run( results.src - {'test_malloc'} )
+        results.check_matched('passed', results.run - {'main'} )
+        results.check_matched('NOMEM', set() )
+        results.check_matched('PANIC', {'main',});
+        stderr.flush()
+        stdout.flush()
 
         print('elm-fail with panic ...')
         prunner  = Elm_Fail_Panic_Runner('./elm-fail', 'elm.c')
@@ -81,8 +102,6 @@ if __name__ == "__main__":
         stderr.flush()
         stdout.flush()
 
-
-
         print('elm-fail with out panic ...')
         runner  = Elm_Fail_Runner('./elm-fail', 'elm.c')
         results = run_main(runner)
@@ -96,4 +115,4 @@ if __name__ == "__main__":
         stderr.flush()
         stdout.flush()
 
-        sys.exit(results.errno or presults.errno)
+        sys.exit(results.errno or presults.errno or tresults.errno)
