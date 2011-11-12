@@ -25,7 +25,7 @@ clean:
 	rm -f $(ALL)
 	rm *.o
 
-test: elm-test elm-fail
+run: elm-test elm-fail
 	./n0run.py ./elm-test
 	./elm-fail-run.py
 
