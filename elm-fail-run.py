@@ -41,13 +41,7 @@ class Elm_Fail_Runner(Fail_Runner) :
                                 s.data.errno, s.data.command)
 
 
-class Elm_Fail_Panic_Runner(Fail_Runner) :
-        err_matchers = Elm_Fail_Runner.err_matchers + compile_matchers ([
-                ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>main)\):'+
-                              br' Error logging error.'),
-                ])
-
-
+class Elm_Panic_Runner(Fail_Runner) :
         def __init__(s, command, source) :
                 Fail_Runner.__init__(s, [command, '--panic'], source ) ;
 
@@ -58,6 +52,14 @@ class Elm_Fail_Panic_Runner(Fail_Runner) :
                 if s.data.errno != 255 :
                         yield Fail("test program failed but not with 255",
                                 s.data.errno, s.data.command)
+
+
+class Elm_Fail_Panic_Runner(Elm_Panic_Runner) :
+        err_matchers = Elm_Fail_Runner.err_matchers + compile_matchers ([
+                ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>main)\):'+
+                              br' Error logging error.'),
+                ])
+
 
 
 
