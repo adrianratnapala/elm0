@@ -199,12 +199,13 @@ def cli_scan_output(r) :
         except IOError as x :
                 die("Error reading test output", x, x.args[0])
 
-
-def run_main(RunnerClass = Runner) :
-        r = RunnerClass(*parse_argv())
-        source          = cli_scan_source(r)
-        run_results     = cli_scan_output(r)
+def run_main(runner) :
+        source       = cli_scan_source(runner)
+        run_results  = cli_scan_output(runner)
         return Results(source, run_results)
+
+def run_main_argv(RunnerClass = Runner, argv=None) :
+        return run_main(RunnerClass(*parse_argv(argv)))
 
 
 class Results() :
@@ -243,7 +244,7 @@ class Results() :
 
 
 if __name__ == "__main__":
-        results = run_main()
+        results = run_main_argv()
 
         results.check_found( results.run )
         results.check_run( results.src )
