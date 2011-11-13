@@ -100,9 +100,9 @@ int sys_error_fwrite(Error *e, FILE *out)
         const char *es = strerror(se->errnum);
 
         if(!se->zname)
-                return fprintf(out, "%s: %s\n", se->zmsg, es);
+                return fprintf(out, "%s: %s", se->zmsg, es);
         else
-                return fprintf(out, "%s (%s): %s\n", se->zmsg, se->zname, es);
+                return fprintf(out, "%s (%s): %s", se->zmsg, se->zname, es);
 
 }
 
@@ -439,12 +439,15 @@ static int test_merror_format()
 
 static int test_system_error()
 {
-        Error *eno = ERROR(sys_error, 0, EEXIST, "pretending");
-
-        log_error(dbg_log, eno);
         char *xerror;
+        Error *eno = SYS_ERROR(EEXIST, "pretending");
+        Error *enf = IO_ERROR("hello", ENOENT, "gone");
+
         asprintf(&xerror, "pretending: %s", strerror(EEXIST));
         chk_error(eno, sys_error_type, xerror);
+
+        asprintf(&xerror, "gone (hello): %s", strerror(ENOENT));
+        chk_error(enf, sys_error_type, xerror);
 
         PASS();
 }
