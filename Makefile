@@ -26,7 +26,7 @@ clean:
 	rm *.o
 
 run: elm-test elm-fail
-	./n0run.py elm.c ./elm-test
+	./n0run.py elm.c ./elm-test ;\
 	./elm-fail-run.py
 
 
