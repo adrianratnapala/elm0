@@ -444,12 +444,12 @@ static int test_system_error()
         Error *enf = IO_ERROR("hello", ENOENT, "gone");
 
         asprintf(&xerror, "pretending: %s", strerror(EEXIST));
-        chk_error(eno, sys_error_type, xerror);
+        CHK( chk_error(eno, sys_error_type, xerror) );
         free(xerror);
         error_destroy(eno);
 
         asprintf(&xerror, "gone (hello): %s", strerror(ENOENT));
-        chk_error(enf, sys_error_type, xerror);
+        CHK( chk_error(enf, sys_error_type, xerror) );
         free(xerror);
         error_destroy(enf);
 
