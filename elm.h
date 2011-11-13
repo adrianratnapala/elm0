@@ -85,8 +85,9 @@ struct Error {
 extern Error *elm_mkerr(const char *file, int line, const char *func);
 
 /*
-  Elm has just one predfined error type "merror" (short for "message error"),
-  which just wraps a message string.  You can create merror objects with
+  Elm has two predfined error types.  The most basic is  "merror" (short for
+  "message error"), which just wraps a message string.  You can create merror
+  objects with
 
         ERROR(merror, "some message" ).
 
@@ -97,6 +98,26 @@ extern Error *elm_mkerr(const char *file, int line, const char *func);
 extern Error *init_merror(Error *e, const char *zfmt, ...);
 extern const ErrorType *const merror_type;
 #define MERROR(...) ERROR(merror, __VA_ARGS__ )
+
+/*
+  The other error type is sys_error, which wraps up ERRNO like error codes.  If
+  you have an errno, you can do:
+
+        SYS_ERROR( errno, msg_prefix )
+
+  If your error is linked to a specific file which you know the name
+  of, then you should use:
+
+        IO_ERROR( filename, errno, msg_prefix )
+
+  But in spite of the name, IO_ERROR actually produces a normal SYS_ERROR
+  object.
+*/
+extern Error *init_sys_error(Error *e, const char* zname, int errnum,
+                                       const char *zmsg);
+extern const ErrorType *const sys_error_type;
+#define SYS_ERROR(N,M) ERROR(sys_error,  0, (N), (M))
+#define IO_ERROR(F,N,M) ERROR(sys_error, F, (N), (M))
 
 
 /*
