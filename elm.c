@@ -70,47 +70,20 @@ static const ErrorType _merror_type = {
 
 const ErrorType *const merror_type = &_merror_type;
 
-Error *init_merror(Error *e, const char *ztext)
+Error *init_merror(Error *e, const char *zfmt, ...)
 {
         e->type = merror_type;
-        e->data = strdup(ztext);
+        e->data = (char*)zfmt; // in case of panic
+
+        va_list va;
+        va_start(va, zfmt);
+        if( vasprintf((char**)&e->data, zfmt, va) < 0 )
+                panic(e);
+        va_end(va);
         return e;
 }
 
-// -- Test Error --
 
-static int chk_error( Error *err, const ErrorType *type,
-                                  const char *zvalue )
-{
-        size_t size;
-        char *buf;
-        FILE *mstream;
-
-        CHK( err->type == type );
-        CHK( mstream = open_memstream(&buf, &size) );
-        CHK( type->fwrite(err, mstream) == strlen(zvalue) );
-        fclose(mstream);
-
-        CHK( size == strlen(zvalue) );
-        CHK( !memcmp(zvalue, buf, size) );
-        free(buf);
-
-        return 1;
-}
-
-static int test_errors()
-{
-        int pre_line = __LINE__;
-        Error *e = MERROR("goodbye world!");
-
-        CHK(chk_error(e, merror_type, "goodbye world!"));
-        CHK(!strcmp(e->meta.file, __FILE__));
-        CHK(!strcmp(e->meta.func, __func__));
-        CHK(e->meta.line == pre_line + 1);
-
-        error_destroy(e);
-        PASS();
-}
 
 // Raw Stderr -----------------------------------------------------------------
 
@@ -239,6 +212,11 @@ int log_error(Logger *lg, Error *err)
         return nbody + nprefix + 1;
 
 no_write:
+        if(errno == ENOMEM)
+                panic_nomem(err->meta.file,
+                            err->meta.line,
+                            err->meta.func
+                           );
         emergency_message("LOGFAILED", &err->meta, "Error logging error.");
         return -1;
 }
@@ -347,6 +325,66 @@ int log_f(Logger *lg,
         return n;
 }
 
+#ifdef TEST
+// -- Test Error --
+
+static int chk_error( Error *err, const ErrorType *type,
+                                  const char *zvalue )
+{
+        size_t size;
+        char *buf;
+        FILE *mstream;
+
+        CHK( err->type == type );
+        CHK( mstream = open_memstream(&buf, &size) );
+        CHK( type->fwrite(err, mstream) == strlen(zvalue) );
+        fclose(mstream);
+
+        CHK( size == strlen(zvalue) );
+        CHK( !memcmp(zvalue, buf, size) );
+        free(buf);
+
+        return 1;
+}
+
+static int test_errors()
+{
+        int pre_line = __LINE__;
+        Error *e = MERROR("goodbye world!");
+
+        CHK(chk_error(e, merror_type, "goodbye world!"));
+        CHK(!strcmp(e->meta.file, __FILE__));
+        CHK(!strcmp(e->meta.func, __func__));
+        CHK(e->meta.line == pre_line + 1);
+
+        error_destroy(e);
+        PASS();
+}
+
+static int test_merror_format()
+{
+        int pre_line = __LINE__;
+        Error *e[] = {
+                MERROR("Happy unbirthday!"),
+                MERROR("%04d every year.", 364),
+                MERROR("%04d every %xth year.", 365, 4),
+        };
+
+        CHK(chk_error(e[0], merror_type, "Happy unbirthday!"));
+        CHK(chk_error(e[1], merror_type, "0364 every year."));
+        CHK(chk_error(e[2], merror_type, "0365 every 4th year."));
+
+        for(int k = 0; k < 3; k++) {
+                CHK(!strcmp(e[k]->meta.file, __FILE__));
+                CHK(!strcmp(e[k]->meta.func, __func__));
+                CHK(e[k]->meta.line == pre_line + 2 + k);
+                error_destroy(e[k]);
+        }
+
+        PASS();
+}
+
+// -- Test Logging --
 static int test_logging()
 {
         static const char *expected_text =
@@ -419,6 +457,7 @@ static int test_debug_logger()
 
         PASS();
 }
+#endif
 
 
 // Malloc ---------------------------------------------------------------------
@@ -652,6 +691,7 @@ static int test_try_panic()
 int main(int argc, const char **argv)
 {
         test_errors();
+        test_merror_format();
         test_logging();
         test_debug_logger();
         LOG_F(null_log, "EEEK!  I'm invisible!  Don't look!");

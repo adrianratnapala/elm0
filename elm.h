@@ -4,7 +4,9 @@
   The elm module provies three commonly used utilities which are conceptually
   quite different, but can entangle at the impelmentation level.  These
   are:
-errors  - describes error events, and help handle them (for now by exiting the program, but we might do exceptions in future).
+
+  errors  - describes error events, and help handle them (for now by exiting
+            the program, but we might do exceptions in future).
 
   logging - writes (log) events to a stdio stream.
 
@@ -20,7 +22,7 @@ errors  - describes error events, and help handle them (for now by exiting the p
 /*
   Many parts of elm use the LogMeta struct to hold metadata about various
   events that happen in the program.  For now these metadata are only the
-  source code location (filename, line number, function) where the even
+  source code location (filename, line number, function) where the event
   occurred.  In future we might include things like timestamps.
 */
 typedef struct LogMeta LogMeta;
@@ -40,6 +42,8 @@ typedef struct Error Error;
 /*
   In principle, errors can come in multiple, polymorphic types because each
   error object has a pointer to an method table struct of type ErrorType.
+  (These error types are purely dynamic entities.  At compile time, errors
+  are all of type "Error".
 */
 typedef struct ErrorType ErrorType;
 struct ErrorType {
@@ -90,9 +94,9 @@ extern Error *elm_mkerr(const char *file, int line, const char *func);
         MERROR("some messsage")
 */
 
-extern Error *init_merror(Error *e, const char *ztext);
+extern Error *init_merror(Error *e, const char *zfmt, ...);
 extern const ErrorType *const merror_type;
-#define MERROR(MSG) ERROR(merror, MSG )
+#define MERROR(...) ERROR(merror, __VA_ARGS__ )
 
 
 /*
@@ -125,7 +129,7 @@ extern void panic(Error *e);
 
 /*
     By default, panic() will result in a call to exit().  If you don't want
-    this to happen, you must first alloate a PanicReturn object R and then call
+    this to happen, you must first allocate a PanicReturn object R and then call
     the macro TRY(R)
 */
 typedef struct PanicReturn PanicReturn;
@@ -140,7 +144,7 @@ struct PanicReturn {
     returns a NULL, code exectues as normal until a panic, at which point
     execution returns to the TRY call which will now return the corresponding
     error.  In addition the ".error" membor of the PanicReturn object will also
-    be set to the same error.  One you no longer wnat to protect your errors
+    be set to the same error.  Once you no longer wnat to protect your errors
     this way, call NO_WORRIES.
 
     A good way to use this  is
@@ -159,7 +163,19 @@ struct PanicReturn {
 
 
     Any number of TRY / NO_WORRIES pairs can be nested.  If you find you can't
-    handle the error, you can always panic again.
+    handle the error, you can always panic again.  The code which executes when
+    "TRY" behaves as if NO_WORRIES has already been called.  In the above
+    exmaple, this is fine because of the "return".  If you want to
+    carry on inside your function, you need
+
+            PanicReturn ret;
+            if( TRY(ret) ) {
+                ... clean up after error ...
+            } else {
+                ... something dangerous
+                NO_WORRIES(ret);
+            }
+
 */
 #define TRY(R) (_PANIC_SET(R) ? _panic_pop(&(R)) :  0)
 #ifdef NDEBUG
@@ -224,9 +240,8 @@ extern Logger
   One common use for loggers (over printf), is to allow you to write code that
   always sends log messages which can be switched off en masse without changing
   the bulk of the code.  You can do this by referring to these four logs by
-  aliases, such a "info", "verbose" or just "log".  Then you ca assign these
-  aliases to one "null_log" when you don't want to see the corresponding
-  output.
+  aliases, such a "info", "verbose" or just "log".  Then you can assign these
+  aliases to "null_log" when you don't want to see the corresponding output.
 
   For more flexibility, you might want to create you own loggers by calling
 */
@@ -264,8 +279,9 @@ extern int log_f(Logger *lg,
            ...);
 
 /*
-   You can also log an error using.  The metadata will come from the error,
-   not from the location of the logging call.
+   You can also log an error using log_error.  The metadata will come from the
+   error, not from the location of the logging call.  The human readable text
+   produced by the err->fwrite() method will also be logged.
  */
 extern int log_error(Logger *lg, Error *err);
 
