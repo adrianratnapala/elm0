@@ -212,6 +212,11 @@ int log_error(Logger *lg, Error *err)
         return nbody + nprefix + 1;
 
 no_write:
+        if(errno == ENOMEM)
+                panic_nomem(err->meta.file,
+                            err->meta.line,
+                            err->meta.func
+                           );
         emergency_message("LOGFAILED", &err->meta, "Error logging error.");
         return -1;
 }
