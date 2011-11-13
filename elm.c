@@ -83,6 +83,58 @@ Error *init_merror(Error *e, const char *zfmt, ...)
         return e;
 }
 
+// -- Sysstem Error - FIX: what are they? ---------------------------
+
+typedef struct
+{
+        char *zname;
+        int   errnum;
+        char  zmsg[];
+} Sys_Error;
+
+int sys_error_fwrite(Error *e, FILE *out)
+/* Write error to stdio in human readable form. */
+{
+        // because I'm eeevil, because I'm evil, I'm, eeevil, evil.
+        Sys_Error  *se = e->data;
+        const char *es = strerror(se->errnum);
+
+        if(!se->zname)
+                return fprintf(out, "%s: %s\n", se->zmsg, es);
+        else
+                return fprintf(out, "%s (%s): %s\n", se->zmsg, se->zname, es);
+
+}
+
+static const ErrorType _sys_error_type = {
+        fwrite    : sys_error_fwrite,
+        cleanup   : merror_cleanup
+};
+
+const ErrorType *const sys_error_type = &_sys_error_type;
+
+Error *init_sys_error(Error *e, const char* zname, int errnum, const char *zmsg)
+{
+        int nmsg  = strlen(zmsg) + 1;
+        int nname = (zname ? strlen(zname) + 1 : 0);
+        Sys_Error *se = malloc(sizeof(Sys_Error) + nmsg + nname );
+        if(!se)
+                panic_nomem(e->meta.file, e->meta.line, e->meta.func);
+        se->errnum = errnum;
+        memcpy(se->zmsg,  zmsg,  nmsg);
+        if(!zname)
+                se->zname = 0;
+        else {
+                se->zname = se->zmsg + nmsg;
+                memcpy(se->zname, zname, nname);
+        }
+
+        e->type = sys_error_type;
+        e->data = se;
+
+        return e;
+}
+
 
 
 // Raw Stderr -----------------------------------------------------------------
@@ -335,6 +387,7 @@ static int chk_error( Error *err, const ErrorType *type,
         char *buf;
         FILE *mstream;
 
+        CHK( err );
         CHK( err->type == type );
         CHK( mstream = open_memstream(&buf, &size) );
         CHK( type->fwrite(err, mstream) == strlen(zvalue) );
@@ -380,6 +433,18 @@ static int test_merror_format()
                 CHK(e[k]->meta.line == pre_line + 2 + k);
                 error_destroy(e[k]);
         }
+
+        PASS();
+}
+
+static int test_system_error()
+{
+        Error *eno = ERROR(sys_error, 0, EEXIST, "pretending");
+
+        log_error(dbg_log, eno);
+        char *xerror;
+        asprintf(&xerror, "pretending: %s", strerror(EEXIST));
+        chk_error(eno, sys_error_type, xerror);
 
         PASS();
 }
@@ -479,7 +544,7 @@ static int test_debug_logger()
         conditionally do a longjmp to a place where you can try to carry on.
 */
 
-
+// FIX: these should just take a LogMeta pointer
 void panic_nomem(const char* file, int line, const char *func)
 /* Report an out-of-memory conditions and then exit the program */
 {
@@ -692,6 +757,8 @@ int main(int argc, const char **argv)
 {
         test_errors();
         test_merror_format();
+        test_system_error();
+
         test_logging();
         test_debug_logger();
         LOG_F(null_log, "EEEK!  I'm invisible!  Don't look!");
