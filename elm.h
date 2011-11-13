@@ -94,9 +94,9 @@ extern Error *elm_mkerr(const char *file, int line, const char *func);
         MERROR("some messsage")
 */
 
-extern Error *init_merror(Error *e, const char *ztext);
+extern Error *init_merror(Error *e, const char *zfmt, ...);
 extern const ErrorType *const merror_type;
-#define MERROR(MSG) ERROR(merror, MSG )
+#define MERROR(...) ERROR(merror, __VA_ARGS__ )
 
 
 /*

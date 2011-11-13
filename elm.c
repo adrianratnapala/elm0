@@ -70,7 +70,8 @@ static const ErrorType _merror_type = {
 
 const ErrorType *const merror_type = &_merror_type;
 
-Error *init_merror(Error *e, const char *ztext)
+//FIX: should be printf style
+Error *init_merror(Error *e, const char *ztext, ...)
 {
         e->type = merror_type;
         e->data = strdup(ztext);
@@ -110,6 +111,29 @@ static int test_errors()
         CHK(e->meta.line == pre_line + 1);
 
         error_destroy(e);
+        PASS();
+}
+
+static int test_merror_format()
+{
+        int pre_line = __LINE__;
+        Error *e[] = {
+                MERROR("Happy unbirthday!"),
+                MERROR("%04d every year.", 364),
+                MERROR("%04d every %xth year.", 364, 4),
+        };
+
+        CHK(chk_error(e[0], merror_type, "Happy unbirthday!"));
+        CHK(chk_error(e[1], merror_type, "364 every year."));
+        CHK(chk_error(e[2], merror_type, "365 every 4th year."));
+
+        for(int k = 0; k < 3; k++) {
+                CHK(!strcmp(e[k]->meta.file, __FILE__));
+                CHK(!strcmp(e[k]->meta.func, __func__));
+                CHK(e[k]->meta.line == pre_line + 2);
+                error_destroy(e[k]);
+        }
+
         PASS();
 }
 #endif
@@ -656,6 +680,7 @@ static int test_try_panic()
 int main(int argc, const char **argv)
 {
         test_errors();
+        test_merror_format();
         test_logging();
         test_debug_logger();
         LOG_F(null_log, "EEEK!  I'm invisible!  Don't look!");
