@@ -1,6 +1,6 @@
 CFLAGS=-std=c99 -g  -Wall -Wno-parentheses -Werror
 
-ALL=elm
+ALL=elm-test elm-fail
 
 all: $(ALL)
 test: $(ALL)
@@ -18,8 +18,6 @@ again: clean all
 
 %: %-test.o
 	$(CC) $(LDFLAGS)  -o $@ $^
-
-elm:  elm-test.o
 
 clean:
 	rm -f $(ALL)
