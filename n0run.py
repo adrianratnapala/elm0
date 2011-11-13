@@ -148,7 +148,7 @@ def scan_output(po, matchers = match_passed ) :
 
 class Runner :
         matchers = match_passed
-        command_pre = ['valgrind', '-q']
+        command_pre = ['valgrind', '-q', '--leak-check=yes']
         def __init__(s, command, source) :
                 s.data = RunData(s.command_pre + list(command), source)
                 s.check_output()
@@ -168,6 +168,7 @@ class Runner :
 
 class Fail_Runner(Runner) :
         matchers = match_passed + match_failed
+        command_pre = ['valgrind', '-q']
 
         def check_output(s) :
                 if s.data.errno == 0 :
