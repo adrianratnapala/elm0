@@ -159,6 +159,7 @@ class Runner :
         def scan_output(s) : return scan_output(s.lines, s.matchers)
         def check_output(s):
                 if s.data.err != b'' :
+                        sys.stderr.buffer.write(s.data.err)
                         yield Fail("test program wrote to stderr",
                                         -1, s.data.command)
                 if s.data.errno :
