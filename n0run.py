@@ -116,7 +116,7 @@ def compile_matchers(sources) :
         return list(map(compile_one, sources))
 
 match_passed = compile_matchers([ ('passed', b'^passed: (?P<n>test\S*)') ])
-match_failed = compile_matchers([ ('FAILED', b'^FAILED: (?P<n>test\S*)') ])
+match_failed = compile_matchers([ ('FAILED', b'^FAILED: [^:]+:[0-9]+:(?P<n>test\S*)') ])
 
 def scan_output(po, matchers = match_passed ) :
         out = {}
