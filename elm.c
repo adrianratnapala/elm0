@@ -732,12 +732,13 @@ static int test_try_panic()
         if ( err = TRY(ret) ) {
                 CHK( !_panic_return );
                 CHK( err->type == merror_type );
-                CHK( chk_error( err, merror_type, "never!" ) );
+                CHK( chk_error( err, merror_type,
+                        "not in 07 years!" ) );
                 error_destroy(err);
                 failed = 1;
         } else {
                 CHK( _panic_return );
-                MPANIC("never!");
+                MPANIC("not in %02d %s!", 7, "years");
                 assert(!"never");
                 NO_WORRIES(ret);
         }

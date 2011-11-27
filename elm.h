@@ -145,7 +145,7 @@ extern void panic(Error *e);
    immediately panic with it.
 */
 #define PANIC(T, ...) panic(ERROR(T, __VA_ARGS__)) // a new error of type T,
-#define MPANIC(MSG) panic(MERROR(MSG)) // a new message error
+#define MPANIC(...) panic(MERROR(__VA_ARGS__)) // a new message error
 
 
 /*
