@@ -662,8 +662,8 @@ int _panic_set_return(PanicReturn *ret)
 static void death_panic(Error *e)
 {
         /*A glorious and righteous hack to hijack the most approriate logger.*/
-        init_static_logger(dbg_log); // not strictly needed.
-        Logger panic_log = *dbg_log;
+        init_static_logger(&_dbg_log);
+        Logger panic_log = _dbg_log;
         panic_log.zname = "PANIC!";
 
         log_error( &panic_log, e);
@@ -756,6 +756,20 @@ static int test_try_panic()
         CHK( failed && succeeded );
         PASS();
 }
+
+
+static int test_log_hiding()
+{
+        // this test always passes, can do interesting stuff.
+        Logger *old_log = dbg_log;
+        dbg_log = null_log;
+        LOG_F(dbg_log, "Look at mee! I'm invisible!");
+        dbg_log = old_log;
+        if(FAKE_FAIL)
+                LOG_F(dbg_log, "Visible debug.");
+
+        PASS();
+}
 #endif //TEST
 
 // -- Main -----------------------------
@@ -763,6 +777,7 @@ static int test_try_panic()
 #ifdef TEST
 int main(int argc, const char **argv)
 {
+
         test_errors();
         test_merror_format();
         test_system_error();
@@ -770,6 +785,8 @@ int main(int argc, const char **argv)
         test_logging();
         test_debug_logger();
         LOG_F(null_log, "EEEK!  I'm invisible!  Don't look!");
+
+        test_log_hiding();
 
         test_try_panic();
         test_recursive_panic();
