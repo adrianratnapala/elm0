@@ -3,7 +3,9 @@ CFLAGS=-std=c99 -g  -Wall -Wno-parentheses -Werror
 ALL=elm-test elm-fail
 
 all: $(ALL)
-test: $(ALL)
+
+# testing without n0run.
+simple-test: $(ALL)
 	for k in $^ ; do \
 		valgrind --leak-check=full -q ./$$k ;\
 	done
