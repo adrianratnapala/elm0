@@ -131,7 +131,7 @@ extern void error_destroy(Error *e);
 /*-- Panic --------------------------------------------------------------------
   Extreme errors can be handled using panic(), which either:
         -> Logs a standard error and then calls exit(), or
-        -> Unwind's the stack much like exception handling.
+        -> Unwinds the stack much like exception handling.
 
   Be warned, this is C, there is no garbage collection or automatic destructor
   calling, which can make stack unwinding less useful than in other languages.
@@ -165,7 +165,7 @@ struct PanicReturn {
     returns a NULL, code exectues as normal until a panic, at which point
     execution returns to the TRY call which will now return the corresponding
     error.  In addition the ".error" membor of the PanicReturn object will also
-    be set to the same error.  Once you no longer wnat to protect your errors
+    be set to the same error.  Once you no longer want to protect your errors
     this way, call NO_WORRIES.
 
     A good way to use this  is
@@ -185,9 +185,10 @@ struct PanicReturn {
 
     Any number of TRY / NO_WORRIES pairs can be nested.  If you find you can't
     handle the error, you can always panic again.  The code which executes when
-    "TRY" behaves as if NO_WORRIES has already been called.  In the above
-    exmaple, this is fine because of the "return".  If you want to
-    carry on inside your function, you need
+    "TRY" is true behaves as if NO_WORRIES has already been called.  In the
+    above example, if not for the "return", this would cause an effective
+    double-call of NO_WORRIES.  If you want to carry on inside your function,
+    you need
 
             PanicReturn ret;
             if( TRY(ret) ) {
@@ -199,11 +200,7 @@ struct PanicReturn {
 
 */
 #define TRY(R) (_PANIC_SET(R) ? _panic_pop(&(R)) :  0)
-#ifdef NDEBUG
-#  define NO_WORRIES(R) _panic_pop(&(R))
-#else
-#  define NO_WORRIES(R) assert(!_panic_pop(&(R)))
-#endif
+#define NO_WORRIES(R) _panic_pop(&(R))
 
 
 #define _PANIC_SET(R) (_panic_set_return(&(R))||setjmp(*(jmp_buf*)(&R)))

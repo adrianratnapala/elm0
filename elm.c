@@ -14,7 +14,9 @@ elm: errors, logging and malloc.
 
 #include <sys/resource.h>
 
+#ifdef TEST
 #include "0unit.h"
+#endif
 #include "elm.h"
 
 /* Set this to one to test some emergency-fail code. */
