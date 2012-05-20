@@ -119,6 +119,9 @@ extern const ErrorType *const sys_error_type;
 #define SYS_ERROR(N,M) ERROR(sys_error,  0, (N), (M))
 #define IO_ERROR(F,N,M) ERROR(sys_error, F, (N), (M))
 
+#define SYS_PANIC(N,M) panic(SYS_ERROR(N,M))
+#define IO_PANIC(F,N,M) panic(IO_ERROR(F,N,M))
+
 
 /*
   To discard an error object, call error_destroy.  This will first call the
