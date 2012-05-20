@@ -17,6 +17,13 @@
 #ifndef ELM_H
 #define ELM_H
 
+#ifdef  __GNUC__
+#define CHECK_FMT(N) __attribute__((format(printf,(N),(N)+1)))
+#else
+#define CHECK_FMT(N)
+#endif
+
+#include <stdio.h>
 #include <setjmp.h>
 
 /*
@@ -38,6 +45,7 @@ struct LogMeta {
   when some bad event happens, and contain data to describe that event.
 */
 typedef struct Error Error;
+
 
 /*
   In principle, errors can come in multiple, polymorphic types because each
@@ -95,7 +103,7 @@ extern Error *elm_mkerr(const char *file, int line, const char *func);
         MERROR("some messsage")
 */
 
-extern Error *init_merror(Error *e, const char *zfmt, ...);
+extern Error *init_merror(Error *e, const char *zfmt, ...) CHECK_FMT(2);
 extern const ErrorType *const merror_type;
 #define MERROR(...) ERROR(merror, __VA_ARGS__ )
 
@@ -296,8 +304,8 @@ extern int log_f(Logger *lg,
            const char *file,
            int         line,
            const char *func,
-           const char *msg,
-           ...);
+           const char *fmt,
+           ...) CHECK_FMT(5);
 
 /*
    You can also log an error using log_error.  The metadata will come from the
