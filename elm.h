@@ -314,6 +314,14 @@ extern int log_f(Logger *lg,
  */
 extern int log_error(Logger *lg, Error *err);
 
+#define LOG_UNLESS(L, T) do {\
+                        if(!(T)) log_f(L, __FILE__, __LINE__, __func__, #T); \
+               } while(0)
+
+#define DBG_UNLESS(T) LOG_UNLESS(dbg_log, T)
+
+
+
 /*-- Malloc ------------------------------------------------------------------
 */
 

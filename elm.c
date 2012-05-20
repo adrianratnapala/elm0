@@ -487,6 +487,7 @@ static int test_logging()
         static const char *expected_text =
                 "TEST: Hello Logs!\n"
                 "TEST: Hello Logs #2!\n"
+                "TEST: -1+4 == 8\n"
                 "TEST: goodbye world!\n"
                 ;
 
@@ -512,10 +513,15 @@ static int test_logging()
         CHK( size == 18 + 21 );
         CHK( !memcmp(buf, expected_text, size) );
 
+        LOG_UNLESS(lg, 4+4 == 8);
+        CHK( size == 18 + 21 );
+        LOG_UNLESS(lg, -1+4 == 8);
+        CHK( size == 18 + 21 + 16 );
+
         Error *e = ERROR(merror, "goodbye world!");
         CHK( log_error(nlg, e) == 0 );
         CHK( log_error(lg, e) == 21 );
-        CHK( size == 18 + 21 + 21 );
+        CHK( size == 18 + 21 + 16 + 21 );
         CHK( !memcmp(buf, expected_text, size) );
 
         logger_destroy(lg);
