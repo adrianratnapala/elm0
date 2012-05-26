@@ -487,6 +487,7 @@ static int test_logging()
         LOG_F(nlg, "Hello Logs #%d!", 2);
         LOG_F(lg, "Hello Logs #%d!", 2);
         CHK( size == 18 + 21 );
+        CHK( !memcmp(buf, expected_text, size) );
 
         Error *e = ERROR(merror, "goodbye world!");
         CHK( log_error(nlg, e) == 0 );
