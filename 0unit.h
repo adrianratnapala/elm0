@@ -15,12 +15,28 @@
 #include <stdio.h>
 #define CHK(T) do {\
                         if( !chk( !!(T), __FILE__, __LINE__, __func__, #T) ) \
-                                return 0; \
+                                goto fail; \
                } while(0)
 
 #define WRN(T) wrn( !!(T), __FILE__, __LINE__, __func__, #T)
 
-#define PASS() return pass( __func__ )
+#define PASS()                   \
+        return pass( __func__ ); \
+        goto fail;               \
+        fail:                    \
+        return 0
+
+#define PASS_ONLY()              \
+        return pass( __func__ ); \
+        goto fail;               \
+
+#define PASS_QUIETLY()           \
+        return 1;                \
+        goto fail;               \
+        fail:                    \
+        return 0
+
+
 
 inline static int chk(int pass, const char *file, int line,
                                 const char *test, const char *text)

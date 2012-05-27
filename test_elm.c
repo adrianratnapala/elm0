@@ -88,7 +88,7 @@ static int chk_error( Error *err, const ErrorType *type,
         CHK( !memcmp(zvalue, buf, size) );
         free(buf);
 
-        return 1;
+        PASS_QUIETLY();
 }
 
 static int test_errors()
@@ -343,7 +343,7 @@ static int chk_recursive_panic(int depth)
         CHK( depth == 0 );
         CHK( catch_count == 9);
         catch_count = 0;
-        return 1;
+        PASS_QUIETLY();
 }
 
 static int test_recursive_panic()
