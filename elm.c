@@ -54,15 +54,15 @@ void destroy_error(Error *e)
 {
         assert(e);
         assert(e->type);
-        assert(e->type->cleanup);
-        e->type->cleanup(e);
+        if(e->type->cleanup)
+                e->type->cleanup(e->data);
         free(e);
 }
 
 // -- Message Error - Just wraps a message string in an error object.
 
 
-int error_fwrite(Error *e, FILE *out)
+static int error_fwrite(Error *e, FILE *out)
 /* Write error to stdio in human readable form. */
 {
         return fwrite(e->data, 1, strlen(e->data), out);
@@ -76,7 +76,7 @@ void error_cleanup(Error *e)
 
 static const ErrorType _error_type = {
         fwrite    : error_fwrite,
-        cleanup   : error_cleanup
+        cleanup   : free
 };
 
 const ErrorType *const error_type = &_error_type;
@@ -119,7 +119,7 @@ int sys_error_fwrite(Error *e, FILE *out)
 
 static const ErrorType _sys_error_type = {
         fwrite    : sys_error_fwrite,
-        cleanup   : error_cleanup
+        cleanup   : free
 };
 
 const ErrorType *const sys_error_type = &_sys_error_type;

@@ -96,7 +96,7 @@ struct ErrorType {
         /* fwrite sends a human readable representation to a stdio stream. */
         int  (*fwrite)(Error *e, FILE *out);
         /* cleanup is called once the object is no longer needed.  */
-        void (*cleanup)(Error *e);
+        void (*cleanup)(void *data);
 };
 
 /*
