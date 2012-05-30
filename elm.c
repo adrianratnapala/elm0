@@ -143,6 +143,7 @@ Error *init_sys_error(Error *e, const char* zname, int errnum, const char *zmsg)
         e->type = sys_error_type;
         e->data = se;
 
+        errno = 0;
         return e;
 }
 
