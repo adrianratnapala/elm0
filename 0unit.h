@@ -10,9 +10,9 @@
 #ifndef _0UNIT_H
 #define _0UNIT_H
 
-// FIX: CHK should goto fail;
-
 #include <stdio.h>
+#include <stdarg.h>
+
 #define CHK(T) do {\
                         if( !chk( !!(T), __FILE__, __LINE__, __func__, #T) ) \
                                 goto fail; \
@@ -36,27 +36,38 @@
         fail:                    \
         return 0
 
-
-
-inline static int chk(int pass, const char *file, int line,
-                                const char *test, const char *text)
+inline static int fail(const char *prefix,
+                       const char *file, int line, const char *test,
+                       const char *fmt, va_list va)
 {
-        if( pass )
-                return 1;
-        printf("\033[31m\033[1mFAILED:\033[0m %s:%d:%s <%s>\n",
-                file, line, test, text);
+        printf("%s %s:%d:%s <", prefix, file, line, test);
+        vprintf(fmt, va);
+        printf(">\n");
+        fflush(stdout);
+        va_end(va);
         return 0;
 }
 
-inline static int wrn(int pass, const char *file, int line,
-                                const char *test, const char *text)
+inline static int chk(int pass, const char *file, int line, const char *test,
+                                const char *fmt, ...)
 {
         if( pass )
                 return 1;
-        printf("\033[34m\033[1mWARNING:\033[0m %s:%d:%s <%s>\n",
-                file, line,test, text);
-        return 0;
+        va_list va;
+        va_start(va, fmt);
+        return fail("\033[31m\033[1mFAILED:\033[0m", file, line, test, fmt, va);
 }
+
+inline static int wrn(int pass, const char *file, int line, const char *test,
+                                const char *fmt, ...)
+{
+        if( pass )
+                return 1;
+        va_list va;
+        va_start(va, fmt);
+        return fail("\033[34m\033[1mWARNING:\033[0m", file, line, test, fmt, va);
+}
+
 
 inline static int pass(const char *test) {
         printf("\033[32m\033[1mpassed:\033[0m %s\n", test);
