@@ -13,12 +13,26 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#ifndef CHECK_FMT
+# ifdef __GNUC__
+#  define CHECK_FMT(N) __attribute__((format(printf,(N),(N)+1)))
+# else
+#  define CHECK_FMT(N)
+# endif
+#endif
+
 #define CHK(T) do {\
                         if( !chk( !!(T), __FILE__, __LINE__, __func__, #T) ) \
                                 goto fail; \
                } while(0)
 
-#define WRN(T) wrn( !!(T), __FILE__, __LINE__, __func__, #T)
+#define FAIL(M, ...) do {\
+                        if( !chk( 0, __FILE__, __LINE__, __func__, \
+                                  M, __VA_ARGS__) ) goto fail; \
+               } while(0)
+
+#define WRN(M) wrn( 0, __FILE__, __LINE__, __func__, M)
+
 
 #define PASS()                   \
         return pass( __func__ ); \
@@ -48,6 +62,7 @@ inline static int fail(const char *prefix,
         return 0;
 }
 
+CHECK_FMT(5)
 inline static int chk(int pass, const char *file, int line, const char *test,
                                 const char *fmt, ...)
 {
@@ -58,6 +73,7 @@ inline static int chk(int pass, const char *file, int line, const char *test,
         return fail("\033[31m\033[1mFAILED:\033[0m", file, line, test, fmt, va);
 }
 
+CHECK_FMT(5)
 inline static int wrn(int pass, const char *file, int line, const char *test,
                                 const char *fmt, ...)
 {

@@ -21,11 +21,15 @@
 #ifndef ELM_H
 #define ELM_H
 
-#ifdef  __GNUC__
-#define CHECK_FMT(N) __attribute__((format(printf,(N),(N)+1)))
-#else
-#define CHECK_FMT(N)
+#ifndef CHECK_FMT
+# ifdef __GNUC__
+#  define CHECK_FMT(N) __attribute__((format(printf,(N),(N)+1)))
+# else
+#  define CHECK_FMT(N)
+# endif
 #endif
+
+
 
 #include <stdio.h>
 #include <setjmp.h>
