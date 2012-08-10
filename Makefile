@@ -23,7 +23,7 @@ again: clean all
 
 clean:
 	rm -f $(ALL)
-	rm *.o
+	rm -f *.o
 
 run: elm-test elm-fail
 	./n0run.py elm.c ./elm-test ;\
