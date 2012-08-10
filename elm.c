@@ -575,7 +575,7 @@ static int test_debug_logger()
         PANIC_NOMEM() - Called when malloc fails.
 
         You can call PANIC_NOMEM yourself, if detect an out of memory
-        condition.  Or if you want to supply you own metadata, you can call
+        condition.  Or if you want to supply your own metadata, you can call
 
         void panic_nomem(const char* file, int line, const char *func)
 
