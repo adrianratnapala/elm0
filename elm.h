@@ -278,19 +278,20 @@ extern Logger
 
   For more flexibility, you might want to create you own loggers by calling
 */
-extern Logger *logger_new(const char *zname, FILE *stream);
+extern Logger *new_logger(const char *zname, FILE *stream, const char *opts);
 /*
   which creates a logger that writes to "stream". Its name "zname", is
   prepended before all output messages (along with some punctuation).  If
   "stream" is NULL, you will get a null logger; it will silently ignore all
   messages.
 
-  If you want to include source location metadata in messages, use
+  You can modify the style of logging by setting "opts" to be non-NULL, this
+  string is just a list of option charactors, the only one defined so far is
+  'd' which causes the logger to print out the source location metadata (like
+  the debug logger).  All other option characters are ignored, in this version
+  of elm.  opts==NULL is equivalent to opts="".
 */
-extern Logger *debug_logger_new(const char *zname, FILE *stream);
-
-/* These loggers (but NOT the default ones) can be destroyed using. */
-void logger_destroy(Logger *lg);
+extern Logger *new_logger_with_location_data(const char *zname, FILE *stream);
 
 /*
   To log a message, call

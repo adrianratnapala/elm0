@@ -167,6 +167,9 @@ static void emergency_message(const char *pre, LogMeta *meta, const char *post)
 
 // Logs -----------------------------------------------------------------------
 
+typedef int (*VPrintf)(Logger *lg, LogMeta *meta, const char *msg, va_list va);
+typedef int (*FWritePrefix)(Logger *lg, LogMeta *meta);
+
 struct Logger {
         /*Loggers decorate messages, and send them to a stream. Or drop them.*/
         int  ready;
@@ -175,8 +178,8 @@ struct Logger {
 
 
         /* User redefinable functions (methods) */
-        int (*vprintf)(Logger *lg, LogMeta *meta, const char *msg, va_list va);
-        int (*fwrite_prefix)(Logger *lg, LogMeta *meta);
+        VPrintf vprintf;
+        FWritePrefix fwrite_prefix;
 };
 
 static void init_static_logger(Logger *lg)
@@ -316,9 +319,18 @@ Logger *std_log = &_std_log,
 
 // User created loggers ------.
 
-Logger *logger_new(const char *zname, FILE *stream)
+Logger *new_logger(const char *zname, FILE *stream, const char *opts)
 /* Create a standard logger that writes to "stream". */
 {
+        FWritePrefix fwp = log_prefix;
+
+        if(opts) {
+                int ch;
+                for(const char *o=opts; ch=*o; o++) switch(ch) {
+                case 'd': fwp = dbg_prefix; continue;
+                }
+        }
+
         Logger *lg = malloc( sizeof(Logger) );
         if( !lg )
                 PANIC_NOMEM();
@@ -327,26 +339,14 @@ Logger *logger_new(const char *zname, FILE *stream)
 
         lg->stream  = stream;
         lg->vprintf = log_vprintf;
-        lg->fwrite_prefix = log_prefix;
+        lg->fwrite_prefix = fwp;
         lg->zname = strdup(zname);
-        if( !lg ) {
-                //fix: panic.
-                return 0;
-        }
 
         lg->ready = 1;
         return lg;
 }
 
-Logger *debug_logger_new(const char *zname, FILE *stream)
-/* Create a logger that includes source location in prefixes. */
-{
-        Logger *lg = logger_new(zname, stream);
-        lg->fwrite_prefix = dbg_prefix;
-        return lg;
-}
-
-void logger_destroy(Logger *lg)
+void destroy_logger(Logger *lg)
 /* Frees a non-builtin logger. DO NOT USE ON STATIC LOGGERS */
 {
         free((char*)lg->zname);
@@ -497,10 +497,10 @@ static int test_logging()
         FILE *mstream = open_memstream(&buf, &size);
         CHK( mstream != NULL );
 
-        Logger *lg = logger_new("TEST", mstream);
+        Logger *lg = new_logger("TEST", mstream, NULL);
         CHK(lg);
 
-        Logger *nlg = logger_new("NULL_TEST", 0);
+        Logger *nlg = new_logger("NULL_TEST", 0, NULL);
         CHK(nlg);
 
         CHK( LOG_F(nlg, "Hello Logs!") == 0 );
@@ -524,8 +524,8 @@ static int test_logging()
         CHK( size == 18 + 21 + 16 + 21 );
         CHK( !memcmp(buf, expected_text, size) );
 
-        logger_destroy(lg);
-        logger_destroy(nlg);
+        destroy_logger(lg);
+        destroy_logger(nlg);
         fclose(mstream);
         free(buf);
         destroy_error(e);
@@ -541,7 +541,7 @@ static int test_debug_logger()
         FILE *mstream = open_memstream(&buf, &size);
         CHK( mstream != NULL );
 
-        Logger *lg = debug_logger_new("DTEST", mstream);
+        Logger *lg = new_logger("DTEST", mstream, "d");
         CHK(lg);
 
         char *text = "Eeek, a (pretend) software bug!";
@@ -555,7 +555,7 @@ static int test_debug_logger()
         CHK( !memcmp(expect, buf, size) );
 
         free(expect);
-        logger_destroy(lg);
+        destroy_logger(lg);
         fclose(mstream);
         free(buf);
 
