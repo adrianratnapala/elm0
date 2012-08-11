@@ -338,4 +338,28 @@ extern int test_try_panic()
 }
 
 
+// -- Main -----------------------------
+
+int main(int argc, const char **argv)
+{
+
+        test_errors();
+        test_error_format();
+        test_system_error();
+
+        test_logging();
+        test_debug_logger();
+        LOG_F(null_log, "EEEK!  I'm invisible!  Don't look!");
+
+        test_log_hiding();
+
+        test_try_panic();
+        test_recursive_panic();
+        if( argc > 1 && !strcmp(argv[1], "--panic") )
+                PANIC("The slithy toves!"); //FIX
+        if(FAKE_FAIL)
+                runtests_malloc_fail();
+        else
+                test_malloc(128 * 1024);
+}
 

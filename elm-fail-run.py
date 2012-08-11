@@ -42,7 +42,7 @@ class Panic_Runner(Fail_Runner) :
 class Elm_Panic_Runner(Panic_Runner) :
         # FIX: the different errors do not have very consistent formats
         err_matchers = Elm_Fail_Runner.err_matchers + compile_matchers ([
-                ('PANIC', br'^PANIC! \(elm.c:[0-9]+ in (?P<n>main)\):'+
+                ('PANIC', br'^PANIC! \(test_elm.c:[0-9]+ in (?P<n>main)\):'+
                           br' The slithy toves!'),
                 ])
 
@@ -50,7 +50,7 @@ class Elm_Panic_Runner(Panic_Runner) :
 
 class Elm_Fail_Panic_Runner(Panic_Runner) :
         err_matchers = Elm_Fail_Runner.err_matchers + compile_matchers ([
-                ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>main)\):'+
+                ('LOGFAILED', br'^LOGFAILED \(in test_elm.c:(?P<n>main)\):'+
                               br' Error logging error.'),
                ])
 
