@@ -224,7 +224,7 @@ extern int _panic_set_return(PanicReturn *ret);
 
 /* One common reason to catch serious errors is in unit tests - to see that
    code is throwing them when it should.  Assuming you use 0unit, you
-   can meake these tests cleaner using:
+   can make these tests cleaner using:
 */
 #define CHK_PANIC(T, R)\
         {if( (R).error = TRY((R)) ){          \
@@ -232,7 +232,7 @@ extern int _panic_set_return(PanicReturn *ret);
                 destroy_error((R).error);     \
         } else {
 
-#define END_CHK_PANIC(R)                               \
+#define CHK_PANIC_END(R)                               \
                 NO_WORRIES((R));                       \
                 CHK(!"Expected panic never happened!");\
         }}
