@@ -1,4 +1,4 @@
-CFLAGS=-std=c99 -g  -Wall -Wno-parentheses -Werror
+CFLAGS=-std=c99 -g  -Wall -Wno-parentheses -Werror -Wno-implicit-function-declaration
 
 ALL=elm-test elm-fail
 
@@ -14,11 +14,18 @@ again: clean all
 
 %-fail.o: %.c
 	$(CC) $(CFLAGS) -DTEST=1 -DFAKE_FAIL=1 -c -o $@ $^
+#	$(CC) $(CFLAGS) -DFAKE_FAIL=1 -c -o $@ $^
 
 %-test.o: %.c
 	$(CC) $(CFLAGS) -DTEST=1 -c -o $@ $*.c
+#
+#%: %-test.o
+#	$(CC) $(LDFLAGS)  -o $@ $^
 
-%: %-test.o
+%-test: %-test.o test_%.o
+	$(CC) $(LDFLAGS)  -o $@ $^
+
+%-fail: %-fail.o test_%-fail.o
 	$(CC) $(LDFLAGS)  -o $@ $^
 
 clean:
