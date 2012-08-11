@@ -259,3 +259,83 @@ extern int runtests_malloc_fail(void)
         return 0;
 }
 
+// ----------------------------------------------------------------------------
+
+extern int chk_recursive_panic(int depth)
+{
+        PanicReturn ret;
+        Error *err;
+        static int catch_count = 0;
+
+        assert( depth >= 0 && depth <= 10 );
+        if(depth == 10)
+                PANIC("You've gone too far this time!");
+
+        if(err = TRY(ret)) {
+                catch_count++;
+                CHK(chk_error(err, error_type,
+                        "You've gone too far this time!"));
+                CHK(depth);
+                if(depth > 1)
+                        panic(err);
+                else {
+                        destroy_error(err);
+                        return -depth;
+                }
+                CHK(!"never");
+        }
+
+        CHK( chk_recursive_panic(depth+1) == -1 );
+        NO_WORRIES(ret);
+
+        CHK( depth == 0 );
+        CHK( catch_count == 9);
+        catch_count = 0;
+        return 1;
+}
+
+extern int test_recursive_panic()
+{
+        // do it twice to check the extern catch_counted is handled right.
+        CHK( chk_recursive_panic(0) );
+        CHK( chk_recursive_panic(0) );
+        PASS();
+}
+
+extern int test_try_panic()
+{
+        PanicReturn ret;
+        Error *err;
+        int failed = 0, succeeded = 0;
+
+        // throw an error and catch it.
+        if ( err = TRY(ret) ) {
+                CHK( !panic_is_caught() );
+                CHK( err->type == error_type );
+                CHK( chk_error( err, error_type,
+                        "not in 07 years!" ) );
+                destroy_error(err);
+                failed = 1;
+        } else {
+                CHK( panic_is_caught() );
+                PANIC("not in %02d %s!", 7, "years");
+                assert(!"never");
+                NO_WORRIES(ret);
+        }
+        CHK( !panic_is_caught() );
+
+        // don't throw an error and don't catch it.
+        if ( err = TRY(ret) ) {
+                panic(err);
+        } else {
+                succeeded = 1;
+                NO_WORRIES(ret);
+        }
+        CHK( !panic_is_caught() );
+
+        CHK( failed && succeeded );
+        PASS();
+}
+
+
+
