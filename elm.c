@@ -40,7 +40,7 @@ Error *elm_mkerr(const char *file, int line, const char *func)
         return e;
 }
 
-void error_destroy(Error *e)
+void destroy_error(Error *e)
 /* calls an error's cleanup method, and then free()s the error. */
 {
         assert(e);
@@ -53,28 +53,28 @@ void error_destroy(Error *e)
 // -- Message Error - Just wraps a message string in an error object.
 
 
-int merror_fwrite(Error *e, FILE *out)
+int error_fwrite(Error *e, FILE *out)
 /* Write error to stdio in human readable form. */
 {
         return fwrite(e->data, 1, strlen(e->data), out);
 }
 
-void merror_cleanup(Error *e)
+void error_cleanup(Error *e)
 /* Called when the error is discarded, before it is free()d. */
 {
         free(e->data);
 }
 
-static const ErrorType _merror_type = {
-        fwrite    : merror_fwrite,
-        cleanup   : merror_cleanup
+static const ErrorType _error_type = {
+        fwrite    : error_fwrite,
+        cleanup   : error_cleanup
 };
 
-const ErrorType *const merror_type = &_merror_type;
+const ErrorType *const error_type = &_error_type;
 
-Error *init_merror(Error *e, const char *zfmt, ...)
+Error *init_error(Error *e, const char *zfmt, ...)
 {
-        e->type = merror_type;
+        e->type = error_type;
         e->data = (char*)zfmt; // in case of panic
 
         va_list va;
@@ -110,7 +110,7 @@ int sys_error_fwrite(Error *e, FILE *out)
 
 static const ErrorType _sys_error_type = {
         fwrite    : sys_error_fwrite,
-        cleanup   : merror_cleanup
+        cleanup   : error_cleanup
 };
 
 const ErrorType *const sys_error_type = &_sys_error_type;
@@ -405,35 +405,35 @@ static int chk_error( Error *err, const ErrorType *type,
 static int test_errors()
 {
         int pre_line = __LINE__;
-        Error *e = MERROR("goodbye world!");
+        Error *e = ERROR("goodbye world!");
 
-        CHK(chk_error(e, merror_type, "goodbye world!"));
+        CHK(chk_error(e, error_type, "goodbye world!"));
         CHK(!strcmp(e->meta.file, __FILE__));
         CHK(!strcmp(e->meta.func, __func__));
         CHK(e->meta.line == pre_line + 1);
 
-        error_destroy(e);
+        destroy_error(e);
         PASS();
 }
 
-static int test_merror_format()
+static int test_error_format()
 {
         int pre_line = __LINE__;
         Error *e[] = {
-                MERROR("Happy unbirthday!"),
-                MERROR("%04d every year.", 364),
-                MERROR("%04d every %xth year.", 365, 4),
+                ERROR("Happy unbirthday!"),
+                ERROR("%04d every year.", 364),
+                ERROR("%04d every %xth year.", 365, 4),
         };
 
-        CHK(chk_error(e[0], merror_type, "Happy unbirthday!"));
-        CHK(chk_error(e[1], merror_type, "0364 every year."));
-        CHK(chk_error(e[2], merror_type, "0365 every 4th year."));
+        CHK(chk_error(e[0], error_type, "Happy unbirthday!"));
+        CHK(chk_error(e[1], error_type, "0364 every year."));
+        CHK(chk_error(e[2], error_type, "0365 every 4th year."));
 
         for(int k = 0; k < 3; k++) {
                 CHK(!strcmp(e[k]->meta.file, __FILE__));
                 CHK(!strcmp(e[k]->meta.func, __func__));
                 CHK(e[k]->meta.line == pre_line + 2 + k);
-                error_destroy(e[k]);
+                destroy_error(e[k]);
         }
 
         PASS();
@@ -449,12 +449,12 @@ static int test_system_error()
 
         asprintf(&xerror, "pretending: %s", strerror(EEXIST));
         CHK( chk_error(eno, sys_error_type, xerror) );
-        error_destroy(eno);
+        destroy_error(eno);
 
         ret.error = NULL;;
         if ( TRY(ret) ) {
                 CHK( chk_error( ret.error, sys_error_type, xerror ) );
-                error_destroy(ret.error);
+                destroy_error(ret.error);
         } else {
                 SYS_PANIC(EEXIST, "pretending");
                 NO_WORRIES(ret);
@@ -464,13 +464,13 @@ static int test_system_error()
 
         asprintf(&xerror, "gone (hello): %s", strerror(ENOENT));
         CHK( chk_error(enf, sys_error_type, xerror) );
-        error_destroy(enf);
+        destroy_error(enf);
 
 
         ret.error = NULL;;
         if ( TRY(ret) ) {
                 CHK( chk_error( ret.error, sys_error_type, xerror ) );
-                error_destroy(ret.error);
+                destroy_error(ret.error);
         } else {
                 IO_PANIC("hello", ENOENT, "gone");
                 NO_WORRIES(ret);
@@ -518,7 +518,7 @@ static int test_logging()
         LOG_UNLESS(lg, -1+4 == 8);
         CHK( size == 18 + 21 + 16 );
 
-        Error *e = ERROR(merror, "goodbye world!");
+        Error *e = ERROR_WITH(error, "goodbye world!");
         CHK( log_error(nlg, e) == 0 );
         CHK( log_error(lg, e) == 21 );
         CHK( size == 18 + 21 + 16 + 21 );
@@ -528,7 +528,7 @@ static int test_logging()
         logger_destroy(nlg);
         fclose(mstream);
         free(buf);
-        error_destroy(e);
+        destroy_error(e);
 
         PASS();
 }
@@ -721,17 +721,17 @@ static int chk_recursive_panic(int depth)
 
         assert( depth >= 0 && depth <= 10 );
         if(depth == 10)
-                MPANIC("You've gone too far this time!");
+                PANIC("You've gone too far this time!");
 
         if(err = TRY(ret)) {
                 catch_count++;
-                CHK(chk_error(err, merror_type,
+                CHK(chk_error(err, error_type,
                         "You've gone too far this time!"));
                 CHK(depth);
                 if(depth > 1)
                         panic(err);
                 else {
-                        error_destroy(err);
+                        destroy_error(err);
                         return -depth;
                 }
                 CHK(!"never");
@@ -763,14 +763,14 @@ static int test_try_panic()
         // throw an error and catch it.
         if ( err = TRY(ret) ) {
                 CHK( !_panic_return );
-                CHK( err->type == merror_type );
-                CHK( chk_error( err, merror_type,
+                CHK( err->type == error_type );
+                CHK( chk_error( err, error_type,
                         "not in 07 years!" ) );
-                error_destroy(err);
+                destroy_error(err);
                 failed = 1;
         } else {
                 CHK( _panic_return );
-                MPANIC("not in %02d %s!", 7, "years");
+                PANIC("not in %02d %s!", 7, "years");
                 assert(!"never");
                 NO_WORRIES(ret);
         }
@@ -811,7 +811,7 @@ int main(int argc, const char **argv)
 {
 
         test_errors();
-        test_merror_format();
+        test_error_format();
         test_system_error();
 
         test_logging();
@@ -823,7 +823,7 @@ int main(int argc, const char **argv)
         test_try_panic();
         test_recursive_panic();
         if( argc > 1 && !strcmp(argv[1], "--panic") )
-                MPANIC("The slithy toves!"); //FIX
+                PANIC("The slithy toves!"); //FIX
         if(FAKE_FAIL)
                 runtests_malloc_fail();
         else
