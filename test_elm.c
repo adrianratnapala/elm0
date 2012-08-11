@@ -1,9 +1,12 @@
 #define _GNU_SOURCE
 
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <sys/resource.h>
 
 #include "0unit.h"
 #include "elm.h"
@@ -208,5 +211,51 @@ extern int test_log_hiding() {
                 LOG_F(dbg_log, "Visible debug.");
 
         PASS();
+}
+
+// ----------------------------------------------------------------------------
+
+extern int test_malloc(int n)
+{
+        // ------------------
+        char *ttk = ZALLOC(n);
+        CHK( ttk != NULL );
+        ttk[10] = '5';
+
+        CHK( n > 2048);
+        CHK( ttk[0] == 0 );
+        CHK( ttk[10] == '5' );
+
+        for(int k = n - 1024; k < n; k++ )
+                CHK( ttk[k] == 0 );
+
+        free(ttk);
+
+
+        // ------------------
+        const char *test = "test";
+        char *mlc = MALLOC(strlen(test) + 1);
+        CHK( mlc );
+        CHK( strcpy(mlc, test) == mlc );
+        CHK( !strcmp(mlc, test) );
+
+        free(mlc);
+
+        PASS();
+}
+
+
+extern int runtests_malloc_fail(void)
+{
+        struct rlimit mem_lim;
+
+        mem_lim.rlim_cur = 128*1024*1024;
+        mem_lim.rlim_max = mem_lim.rlim_cur;
+
+        int err = setrlimit(RLIMIT_AS, &mem_lim);
+        assert(!err);
+        test_malloc(128 * 1024);
+        test_malloc(mem_lim.rlim_cur);
+        return 0;
 }
 

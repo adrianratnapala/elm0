@@ -433,53 +433,6 @@ void *zalloc_or_die(const char* file, int line, const char *func, size_t n)
         return 0;
 }
 
-#ifdef TEST
-
-static int test_malloc(int n)
-{
-        // ------------------
-        char *ttk = ZALLOC(n);
-        CHK( ttk != NULL );
-        ttk[10] = '5';
-
-        CHK( n > 2048);
-        CHK( ttk[0] == 0 );
-        CHK( ttk[10] == '5' );
-
-        for(int k = n - 1024; k < n; k++ )
-                CHK( ttk[k] == 0 );
-
-        free(ttk);
-
-
-        // ------------------
-        const char *test = "test";
-        char *mlc = MALLOC(strlen(test) + 1);
-        CHK( mlc );
-        CHK( strcpy(mlc, test) == mlc );
-        CHK( !strcmp(mlc, test) );
-
-        free(mlc);
-
-        PASS();
-}
-
-
-static int runtests_malloc_fail(void)
-{
-        struct rlimit mem_lim;
-
-        mem_lim.rlim_cur = 128*1024*1024;
-        mem_lim.rlim_max = mem_lim.rlim_cur;
-
-        int err = setrlimit(RLIMIT_AS, &mem_lim);
-        assert(!err);
-        test_malloc(128 * 1024);
-        test_malloc(mem_lim.rlim_cur);
-        return 0;
-}
-
-#endif //TEST
 
 // -- Panic ----------------------------
 

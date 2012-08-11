@@ -4,7 +4,7 @@ from n0run import *
 
 class Elm_Fail_Runner(Fail_Runner) :
         err_matchers = compile_matchers ([
-                ('NOMEM', br'^NOMEM \(in elm.c:(?P<n>test_malloc+)'),
+                ('NOMEM', br'^NOMEM \(in test_elm.c:(?P<n>test_malloc+)'),
                 ('LOGFAILED', br'^LOGFAILED \(in test_elm.c:(?P<n>test_logging)\)'),
                 ('LOGFAILED', br'^LOGFAILED \(in test_elm.c:(?P<n>test_debug_logger)\)'),
                 ('LOGFAILED', br'^LOGFAILED \(in test_elm.c:(?P<n>test_log_hiding+)\):'+
