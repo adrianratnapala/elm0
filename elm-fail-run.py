@@ -61,7 +61,7 @@ if __name__ == "__main__":
         from sys import stdout, stderr
 
         print('elm-test with panic ...')
-        trunner  = Elm_Panic_Runner('./elm-test', 'elm.c')
+        trunner  = Elm_Panic_Runner('./elm-test', 'test_elm.c')
         tresults = run_main(trunner)
         results = tresults
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         stdout.flush()
 
         print('elm-fail with panic ...')
-        prunner  = Elm_Fail_Panic_Runner('./elm-fail', 'elm.c')
+        prunner  = Elm_Fail_Panic_Runner('./elm-fail', 'test_elm.c')
         presults = run_main(prunner)
         results = presults
 
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         stdout.flush()
 
         print('elm-fail with out panic ...')
-        runner  = Elm_Fail_Runner('./elm-fail', 'elm.c')
+        runner  = Elm_Fail_Runner('./elm-fail', 'test_elm.c')
         results = run_main(runner)
 
         results.check_found( results.run )

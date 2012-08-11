@@ -19,7 +19,7 @@
 
 
 // ----------------------------------------------------------------------------
-extern int chk_error( Error *err, const ErrorType *type,
+static int chk_error( Error *err, const ErrorType *type,
                                   const char *zvalue )
 {
         size_t size;
@@ -39,7 +39,7 @@ extern int chk_error( Error *err, const ErrorType *type,
         return 1;
 }
 
-extern int test_errors()
+static int test_errors()
 {
         int pre_line = __LINE__;
         Error *e = ERROR("goodbye world!");
@@ -53,7 +53,7 @@ extern int test_errors()
         PASS();
 }
 
-extern int test_error_format()
+static int test_error_format()
 {
         int pre_line = __LINE__;
         Error *e[] = {
@@ -76,7 +76,7 @@ extern int test_error_format()
         PASS();
 }
 
-extern int test_system_error()
+static int test_system_error()
 {
         char *xerror;
         PanicReturn ret;
@@ -121,7 +121,7 @@ extern int test_system_error()
 
 // ----------------------------------------------------------------------------
 
-extern int test_logging()
+static int test_logging()
 {
         static const char *expected_text =
                 "TEST: Hello Logs!\n"
@@ -172,7 +172,7 @@ extern int test_logging()
         PASS();
 }
 
-extern int test_debug_logger()
+static int test_debug_logger()
 {
         size_t size;
         char *buf, *expect;
@@ -201,7 +201,7 @@ extern int test_debug_logger()
         PASS();
 }
 
-extern int test_log_hiding() {
+static int test_log_hiding() {
         // this test always passes, can do interesting stuff.
         Logger *old_log = dbg_log;
         dbg_log = null_log;
@@ -215,7 +215,7 @@ extern int test_log_hiding() {
 
 // ----------------------------------------------------------------------------
 
-extern int test_malloc(int n)
+static int test_malloc(int n)
 {
         // ------------------
         char *ttk = ZALLOC(n);
@@ -245,7 +245,7 @@ extern int test_malloc(int n)
 }
 
 
-extern int runtests_malloc_fail(void)
+static int runtests_malloc_fail(void)
 {
         struct rlimit mem_lim;
 
@@ -261,7 +261,7 @@ extern int runtests_malloc_fail(void)
 
 // ----------------------------------------------------------------------------
 
-extern int chk_recursive_panic(int depth)
+static int chk_recursive_panic(int depth)
 {
         PanicReturn ret;
         Error *err;
@@ -294,15 +294,15 @@ extern int chk_recursive_panic(int depth)
         return 1;
 }
 
-extern int test_recursive_panic()
+static int test_recursive_panic()
 {
-        // do it twice to check the extern catch_counted is handled right.
+        // do it twice to check the static catch_counted is handled right.
         CHK( chk_recursive_panic(0) );
         CHK( chk_recursive_panic(0) );
         PASS();
 }
 
-extern int test_try_panic()
+static int test_try_panic()
 {
         PanicReturn ret;
         Error *err;
