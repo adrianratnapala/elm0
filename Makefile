@@ -1,4 +1,4 @@
-CFLAGS=-std=c99 -g  -Wall -Wno-parentheses -Werror -Wno-implicit-function-declaration
+CFLAGS=-std=c99 -g  -Wall -Wno-parentheses -Werror
 
 ALL=elm-test elm-fail
 
