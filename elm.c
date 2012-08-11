@@ -379,89 +379,6 @@ int log_f(Logger *lg,
         return n;
 }
 
-#ifdef TEST
-// -- Test Error --
-// -- Test Logging --
-static int test_logging()
-{
-        static const char *expected_text =
-                "TEST: Hello Logs!\n"
-                "TEST: Hello Logs #2!\n"
-                "TEST: -1+4 == 8\n"
-                "TEST: goodbye world!\n"
-                ;
-
-        size_t size;
-        char *buf;
-
-        FILE *mstream = open_memstream(&buf, &size);
-        CHK( mstream != NULL );
-
-        Logger *lg = new_logger("TEST", mstream, NULL);
-        CHK(lg);
-
-        Logger *nlg = new_logger("NULL_TEST", 0, NULL);
-        CHK(nlg);
-
-        CHK( LOG_F(nlg, "Hello Logs!") == 0 );
-        CHK( LOG_F(lg, "Hello Logs!") == 18);
-        CHK( size == 18 );
-        CHK( !memcmp(buf, expected_text, size) );
-
-        LOG_F(nlg, "Hello Logs #%d!", 2);
-        LOG_F(lg, "Hello Logs #%d!", 2);
-        CHK( size == 18 + 21 );
-        CHK( !memcmp(buf, expected_text, size) );
-
-        LOG_UNLESS(lg, 4+4 == 8);
-        CHK( size == 18 + 21 );
-        LOG_UNLESS(lg, -1+4 == 8);
-        CHK( size == 18 + 21 + 16 );
-
-        Error *e = ERROR_WITH(error, "goodbye world!");
-        CHK( log_error(nlg, e) == 0 );
-        CHK( log_error(lg, e) == 21 );
-        CHK( size == 18 + 21 + 16 + 21 );
-        CHK( !memcmp(buf, expected_text, size) );
-
-        destroy_logger(lg);
-        destroy_logger(nlg);
-        fclose(mstream);
-        free(buf);
-        destroy_error(e);
-
-        PASS();
-}
-
-static int test_debug_logger()
-{
-        size_t size;
-        char *buf, *expect;
-
-        FILE *mstream = open_memstream(&buf, &size);
-        CHK( mstream != NULL );
-
-        Logger *lg = new_logger("DTEST", mstream, "d");
-        CHK(lg);
-
-        char *text = "Eeek, a (pretend) software bug!";
-        int line_p = __LINE__;
-        LOG_F(lg, "Eeek, a (pretend) software bug!" );
-        int n = asprintf(&expect, "DTEST (%s:%d in %s): %s\n",
-                __FILE__, line_p + 1, __func__, text );
-        CHK( n > 0 );
-
-        CHK( strlen(expect) == size );
-        CHK( !memcmp(expect, buf, size) );
-
-        free(expect);
-        destroy_logger(lg);
-        fclose(mstream);
-        free(buf);
-
-        PASS();
-}
-#endif
 
 
 // Malloc ---------------------------------------------------------------------
@@ -690,18 +607,6 @@ static int test_try_panic()
 }
 
 
-static int test_log_hiding()
-{
-        // this test always passes, can do interesting stuff.
-        Logger *old_log = dbg_log;
-        dbg_log = null_log;
-        LOG_F(dbg_log, "Look at mee! I'm invisible!");
-        dbg_log = old_log;
-        if(FAKE_FAIL)
-                LOG_F(dbg_log, "Visible debug.");
-
-        PASS();
-}
 #endif //TEST
 
 // -- Main -----------------------------
