@@ -86,27 +86,30 @@ struct Error {
 
 /*
   You will create an error of arbitrary type T using the macro.
-        ERROR(T, type specific arguments)
+        ERROR_WITH(T, type specific arguments)
 */
-#define ERROR(T, ...) \
+#define ERROR_WITH(T, ...) \
         init_##T( elm_mkerr(__FILE__,__LINE__,__func__), __VA_ARGS__ )
 
 extern Error *elm_mkerr(const char *file, int line, const char *func);
 
 /*
-  Elm has two predfined error types.  The most basic is  "merror" (short for
-  "message error"), which just wraps a message string.  You can create merror
-  objects with
+  Elm has two predfined error types.  The most basic is  simply called "error";
+  it just wraps a message string.  Although you can create error objects with
 
-        ERROR(merror, "some message").
+        ERROR_WITH(error, "some message"),
 
-  you can also use the shortcut:
-        MERROR("some messsage")
+  you will normally use the shortcut:
+
+        ERROR("some message")
+
+  Both of these return a pointer to a newly alocated error that must
+  be destroyed using destroy_error()
 */
 
-extern Error *init_merror(Error *e, const char *zfmt, ...) CHECK_FMT(2);
-extern const ErrorType *const merror_type;
-#define MERROR(...) ERROR(merror, __VA_ARGS__ )
+extern Error *init_error(Error *e, const char *zfmt, ...) CHECK_FMT(2);
+extern const ErrorType *const error_type;
+#define ERROR(...) ERROR_WITH(error, __VA_ARGS__ )
 
 /*
   The other predefined error type is sys_error, which wraps up `errno` like
@@ -125,18 +128,18 @@ extern const ErrorType *const merror_type;
 extern Error *init_sys_error(Error *e, const char* zname, int errnum,
                                        const char *zmsg);
 extern const ErrorType *const sys_error_type;
-#define SYS_ERROR(N,M) ERROR(sys_error,  0, (N), (M))
-#define IO_ERROR(F,N,M) ERROR(sys_error, F, (N), (M))
+#define SYS_ERROR(N,M) ERROR_WITH(sys_error,  0, (N), (M))
+#define IO_ERROR(F,N,M) ERROR_WITH(sys_error, F, (N), (M))
 
 #define SYS_PANIC(N,M) panic(SYS_ERROR(N,M))
 #define IO_PANIC(F,N,M) panic(IO_ERROR(F,N,M))
 
 
 /*
-  To discard an error object, call error_destroy.  This will first call the
+  To discard an error object, call destroy_error.  This will first call the
   cleanup() method, and then free the object itself.
 */
-extern void error_destroy(Error *e);
+extern void destroy_error(Error *e);
 
 
 /*-- Panic --------------------------------------------------------------------
@@ -152,11 +155,11 @@ extern void error_destroy(Error *e);
 extern void panic(Error *e);
 
 /*
-   Or you can create a new error in analogy to ERROR and MERROR, and then
+   Or you can create a new error in analogy to ERROR and ERROR, and then
    immediately panic with it.
 */
-#define PANIC(T, ...) panic(ERROR(T, __VA_ARGS__)) // a new error of type T,
-#define MPANIC(...) panic(MERROR(__VA_ARGS__)) // a new message error
+#define PANIC_WITH(T, ...) panic(ERROR_WITH(T, __VA_ARGS__))
+#define PANIC(...) panic(ERROR(__VA_ARGS__)) // a new message error
 
 
 /*
@@ -186,7 +189,7 @@ struct PanicReturn {
 
         if(ret.error = TRY(ret)) { // the assignment he is redundant, but nice.
                 // handle the error
-                error_destroy(ret.error);     // remember to do this!
+                destroy_error(ret.error);     // remember to do this!
                 return -1;
         }
 
@@ -221,15 +224,15 @@ extern int _panic_set_return(PanicReturn *ret);
 
 /* One common reason to catch serious errors is in unit tests - to see that
    code is throwing them when it should.  Assuming you use 0unit, you
-   can meake these tests cleaner using:
+   can make these tests cleaner using:
 */
 #define CHK_PANIC(T, R)\
         {if( (R).error = TRY((R)) ){          \
                 CHK((R).error->type ==(T));   \
-                error_destroy((R).error);     \
+                destroy_error((R).error);     \
         } else {
 
-#define END_CHK_PANIC(R)                               \
+#define CHK_PANIC_END(R)                               \
                 NO_WORRIES((R));                       \
                 CHK(!"Expected panic never happened!");\
         }}
@@ -275,19 +278,20 @@ extern Logger
 
   For more flexibility, you might want to create you own loggers by calling
 */
-extern Logger *logger_new(const char *zname, FILE *stream);
+extern Logger *new_logger(const char *zname, FILE *stream, const char *opts);
 /*
   which creates a logger that writes to "stream". Its name "zname", is
   prepended before all output messages (along with some punctuation).  If
   "stream" is NULL, you will get a null logger; it will silently ignore all
   messages.
 
-  If you want to include source location metadata in messages, use
+  You can modify the style of logging by setting "opts" to be non-NULL, this
+  string is just a list of option charactors, the only one defined so far is
+  'd' which causes the logger to print out the source location metadata (like
+  the debug logger).  All other option characters are ignored, in this version
+  of elm.  opts==NULL is equivalent to opts="".
 */
-extern Logger *debug_logger_new(const char *zname, FILE *stream);
-
-/* These loggers (but NOT the default ones) can be destroyed using. */
-void logger_destroy(Logger *lg);
+extern Logger *new_logger_with_location_data(const char *zname, FILE *stream);
 
 /*
   To log a message, call
