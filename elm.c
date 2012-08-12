@@ -14,7 +14,9 @@ elm: errors, logging and malloc.
 
 #include <sys/resource.h>
 
+#ifdef TEST
 #include "0unit.h"
+#endif
 #include "elm.h"
 
 /* Set this to one to test some emergency-fail code. */
@@ -440,18 +442,41 @@ static int test_merror_format()
 static int test_system_error()
 {
         char *xerror;
+        PanicReturn ret;
+
         Error *eno = SYS_ERROR(EEXIST, "pretending");
         Error *enf = IO_ERROR("hello", ENOENT, "gone");
 
         asprintf(&xerror, "pretending: %s", strerror(EEXIST));
         CHK( chk_error(eno, sys_error_type, xerror) );
-        free(xerror);
         error_destroy(eno);
+
+        ret.error = NULL;;
+        if ( TRY(ret) ) {
+                CHK( chk_error( ret.error, sys_error_type, xerror ) );
+                error_destroy(ret.error);
+        } else {
+                SYS_PANIC(EEXIST, "pretending");
+                NO_WORRIES(ret);
+        }
+        CHK(ret.error);
+        free(xerror);
 
         asprintf(&xerror, "gone (hello): %s", strerror(ENOENT));
         CHK( chk_error(enf, sys_error_type, xerror) );
-        free(xerror);
         error_destroy(enf);
+
+
+        ret.error = NULL;;
+        if ( TRY(ret) ) {
+                CHK( chk_error( ret.error, sys_error_type, xerror ) );
+                error_destroy(ret.error);
+        } else {
+                IO_PANIC("hello", ENOENT, "gone");
+                NO_WORRIES(ret);
+        }
+        CHK(ret.error);
+        free(xerror);
 
         PASS();
 }
@@ -462,6 +487,7 @@ static int test_logging()
         static const char *expected_text =
                 "TEST: Hello Logs!\n"
                 "TEST: Hello Logs #2!\n"
+                "TEST: -1+4 == 8\n"
                 "TEST: goodbye world!\n"
                 ;
 
@@ -485,11 +511,17 @@ static int test_logging()
         LOG_F(nlg, "Hello Logs #%d!", 2);
         LOG_F(lg, "Hello Logs #%d!", 2);
         CHK( size == 18 + 21 );
+        CHK( !memcmp(buf, expected_text, size) );
+
+        LOG_UNLESS(lg, 4+4 == 8);
+        CHK( size == 18 + 21 );
+        LOG_UNLESS(lg, -1+4 == 8);
+        CHK( size == 18 + 21 + 16 );
 
         Error *e = ERROR(merror, "goodbye world!");
         CHK( log_error(nlg, e) == 0 );
         CHK( log_error(lg, e) == 21 );
-        CHK( size == 18 + 21 + 21 );
+        CHK( size == 18 + 21 + 16 + 21 );
         CHK( !memcmp(buf, expected_text, size) );
 
         logger_destroy(lg);
@@ -514,7 +546,7 @@ static int test_debug_logger()
 
         char *text = "Eeek, a (pretend) software bug!";
         int line_p = __LINE__;
-        LOG_F(lg, text );
+        LOG_F(lg, "Eeek, a (pretend) software bug!" );
         int n = asprintf(&expect, "DTEST (%s:%d in %s): %s\n",
                 __FILE__, line_p + 1, __func__, text );
         CHK( n > 0 );
@@ -543,7 +575,7 @@ static int test_debug_logger()
         PANIC_NOMEM() - Called when malloc fails.
 
         You can call PANIC_NOMEM yourself, if detect an out of memory
-        condition.  Or if you want to supply you own metadata, you can call
+        condition.  Or if you want to supply your own metadata, you can call
 
         void panic_nomem(const char* file, int line, const char *func)
 
