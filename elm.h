@@ -30,14 +30,14 @@
 // ---------------------------------------------------------------------------------
 
 /*
-  Elm version IDs are utf-8 string comprised of "elm0-" followed by a sequence
+  Elm version IDs are utf-8 strings comprised of "elm0-" followed by a sequence
   of one or more numbers:
         * Each number is in the range [0, 1000).
         * Each number is space padded to three characters.
         * Each number (including the last!) is followed a "." or "-".
 
-  IDs can be converted reversibly into a conventional looking version string by
-  stripping out the spaces and any the trailing '.'; unlike conventional
+  IDs can be converted reversibly into a conventional looking version strings
+  by stripping out the spaces and any the trailing '.'; unlike conventional
   strings, IDs can be compared using strcmp().
 
   Here are some examples:
@@ -48,10 +48,10 @@
         0.42 post           "elm0-  0. 42.   ."
         0.42.3 release      "elm0-  0. 42.  3."
 
-  Here the unnumbered "pre" and "post" mean everyday builds done during
+  Here the unnumbered "pre" and "post" describe everyday builds done during
   debugging.
 
-  You can obtain the version of elm that you cmpiled against using the macro:
+  You can obtain the version of elm that you compiled against using the macro:
 */
 
 #ifndef ELM_VERSION
