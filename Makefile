@@ -13,16 +13,9 @@ simple-test: $(ALL)
 again: clean all
 
 %-fail.o: %.c
-	$(CC) $(CFLAGS) -DTEST=1 -DFAKE_FAIL=1 -c -o $@ $^
-#	$(CC) $(CFLAGS) -DFAKE_FAIL=1 -c -o $@ $^
+	$(CC) $(CFLAGS) -DFAKE_FAIL=1 -c -o $@ $^
 
-%-test.o: %.c
-	$(CC) $(CFLAGS) -DTEST=1 -c -o $@ $*.c
-#
-#%: %-test.o
-#	$(CC) $(LDFLAGS)  -o $@ $^
-
-%-test: %-test.o test_%.o
+%-test: %.o test_%.o
 	$(CC) $(LDFLAGS)  -o $@ $^
 
 %-fail: %-fail.o test_%-fail.o
