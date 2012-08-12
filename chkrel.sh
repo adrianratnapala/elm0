@@ -11,13 +11,14 @@ die() {
         exit 1
 }
 
-opts=`getopt ps "$@"` || die "Bad command line options."
+opts=`getopt pbs "$@"` || die "Bad command line options."
 set -- $opts
 while [ $# -gt 0 ]
 do
         case "$1" in
         (-p) expect_prerelease="yes" ;;
         (-s) skip_unit_tests="yes" ;;
+        (-b) ignore_work_tree="yes" ;;
         (--)
                 shift
                 break;;
@@ -32,16 +33,29 @@ ORIG=$1; shift
 VERNUM=$1; shift
 [ -z $VERNUM ] && die "You must specify the version number."
 
-bad_paths=0
-git --work-tree=$ORIG --git-dir=elm0/.git status --porcelain | (
-        while read stat path
-        do
-                echo "bad path $((++bad_paths)):" $stat $path
-        done
-        exit $bad_paths
-) || die "Some files don't match the repository"
+ORIG_GIT="git --work-tree=$ORIG --git-dir=elm0/.git"
 
-exit
+# -- check that work dir is on the expected branch, and is clean.
+if [ "$ignore_work_tree" != "yes" ]
+then
+        xbranch=rel/$VERNUM
+        $ORIG_GIT branch --list $xbranch | (
+                read star branch
+                [ "$star"  = '*' ] || die "Branch '$xbranch' is not checked out."
+                [ "$branch" = "$xbranch" ] || die "Can't find branch '$xbranch'."
+        ) || exit
+
+        $ORIG_GIT status --porcelain | (
+                bad_paths=0
+                while read stat path
+                do
+                        echo "bad path $((++bad_paths)):" $stat $path
+                done
+                exit $bad_paths
+        ) || die "Some files don't match the repository"
+
+        exit
+fi
 
 rm -rf  $ABS_BUILD
 rm -rf  $ABS_INST
