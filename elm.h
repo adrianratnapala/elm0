@@ -217,6 +217,11 @@ struct PanicReturn {
 #define TRY(R) (_PANIC_SET(R) ? _panic_pop(&(R)) :  0)
 #define NO_WORRIES(R) _panic_pop(&(R))
 
+/*
+   If you ever want to know whether or not you are inside a TRY/NO_WORRIES
+   pair, you can call
+ */
+int panic_is_caught();
 
 #define _PANIC_SET(R) (_panic_set_return(&(R))||setjmp(*(jmp_buf*)(&R)))
 extern Error *_panic_pop(PanicReturn *check);
@@ -290,8 +295,14 @@ extern Logger *new_logger(const char *zname, FILE *stream, const char *opts);
   'd' which causes the logger to print out the source location metadata (like
   the debug logger).  All other option characters are ignored, in this version
   of elm.  opts==NULL is equivalent to opts="".
+
+  You can destroy a logger  with
 */
-extern Logger *new_logger_with_location_data(const char *zname, FILE *stream);
+void destroy_logger(Logger *lg);
+/*
+  but do not call this on a standard logger, it is only for objects returned
+  by new_logger.
+*/
 
 /*
   To log a message, call

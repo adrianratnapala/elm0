@@ -4,12 +4,12 @@ from n0run import *
 
 class Elm_Fail_Runner(Fail_Runner) :
         err_matchers = compile_matchers ([
-                ('NOMEM', br'^NOMEM \(in elm.c:(?P<n>test_malloc+)'),
-                ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>test_logging)\)'),
-                ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>test_debug_logger)\)'),
-                ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>test_log_hiding+)\):'+
+                ('NOMEM', br'^NOMEM \(in test_elm.c:(?P<n>test_malloc+)'),
+                ('LOGFAILED', br'^LOGFAILED \(in test_elm.c:(?P<n>test_logging)\)'),
+                ('LOGFAILED', br'^LOGFAILED \(in test_elm.c:(?P<n>test_debug_logger)\)'),
+                ('LOGFAILED', br'^LOGFAILED \(in test_elm.c:(?P<n>test_log_hiding+)\):'+
                               br' Visible debug.'),
-                ('DBG', br'^DBG \(elm.c:[0-9]+ in (?P<n>test_log_hiding+)\):'+
+                ('DBG', br'^DBG \(test_elm.c:[0-9]+ in (?P<n>test_log_hiding+)\):'+
                         br' Visible debug.'),
 
         ])
@@ -42,7 +42,7 @@ class Panic_Runner(Fail_Runner) :
 class Elm_Panic_Runner(Panic_Runner) :
         # FIX: the different errors do not have very consistent formats
         err_matchers = Elm_Fail_Runner.err_matchers + compile_matchers ([
-                ('PANIC', br'^PANIC! \(elm.c:[0-9]+ in (?P<n>main)\):'+
+                ('PANIC', br'^PANIC! \(test_elm.c:[0-9]+ in (?P<n>main)\):'+
                           br' The slithy toves!'),
                 ])
 
@@ -50,7 +50,7 @@ class Elm_Panic_Runner(Panic_Runner) :
 
 class Elm_Fail_Panic_Runner(Panic_Runner) :
         err_matchers = Elm_Fail_Runner.err_matchers + compile_matchers ([
-                ('LOGFAILED', br'^LOGFAILED \(in elm.c:(?P<n>main)\):'+
+                ('LOGFAILED', br'^LOGFAILED \(in test_elm.c:(?P<n>main)\):'+
                               br' Error logging error.'),
                ])
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
         from sys import stdout, stderr
 
         print('elm-test with panic ...')
-        trunner  = Elm_Panic_Runner('./elm-test', 'elm.c')
+        trunner  = Elm_Panic_Runner('./elm-test', 'test_elm.c')
         tresults = run_main(trunner)
         results = tresults
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         stdout.flush()
 
         print('elm-fail with panic ...')
-        prunner  = Elm_Fail_Panic_Runner('./elm-fail', 'elm.c')
+        prunner  = Elm_Fail_Panic_Runner('./elm-fail', 'test_elm.c')
         presults = run_main(prunner)
         results = presults
 
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         stdout.flush()
 
         print('elm-fail with out panic ...')
-        runner  = Elm_Fail_Runner('./elm-fail', 'elm.c')
+        runner  = Elm_Fail_Runner('./elm-fail', 'test_elm.c')
         results = run_main(runner)
 
         results.check_found( results.run )
