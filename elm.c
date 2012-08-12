@@ -24,6 +24,10 @@ elm: errors, logging and malloc.
 #define FAKE_FAIL 0
 #endif
 
+const char *elm_version()
+{
+        return ELM_VERSION;
+}
 
 // Errors ---------------------------------------------------------------------
 
