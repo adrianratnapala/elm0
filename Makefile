@@ -1,20 +1,24 @@
+BUILD_DIR ?= .
+
+LIBS=elm.a
+TEST_PROGS=elm-test elm-fail
+
 OPTFLAGS ?= -g -Werror
 CFLAGS = -std=c99 $(OPTFLAGS) -Wall -Wno-parentheses
 
-ALL=elm-test elm-fail
 
-all: $(ALL)
+TEST_TARGETS = $(TEST_PROGS:%=$(BUILD_DIR)/%)
+LIB_TARGETS = $(LIBS:%=$(BUILD_DIR)/%)
 
-# testing without n0run.
-simple-test: $(ALL)
-	for k in $^ ; do \
-		valgrind --leak-check=full -q ./$$k ;\
-	done
 
-again: clean all
+all: dirs $(LIB_TARGETS)
+test_progs: dirs $(TEST_TARGETS)
 
-%-fail.o: %.c
+$(BUILD_DIR)/%-fail.o: %.c
 	$(CC) $(CFLAGS) -DFAKE_FAIL=1 -c -o $@ $^
+
+$(BUILD_DIR)/%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $^
 
 %-test: %.o test_%.o
 	$(CC) $(LDFLAGS)  -o $@ $^
@@ -23,14 +27,17 @@ again: clean all
 	$(CC) $(LDFLAGS)  -o $@ $^
 
 clean:
-	rm -f $(ALL)
+	rm -f $(TEST_TARGETS) $(LIB_TARGETS)
 	rm -f *.o
 
-run: elm-test elm-fail
-	./n0run.py test_elm.c ./elm-test ;\
-	./elm-fail-run.py
+run: test_progs
+	TEST_DIR=$(BUILD_DIR) ./n0run.py test_elm.c ./elm-test ;\
+	TEST_DIR=$(BUILD_DIR) ./elm-fail-run.py
 
-elm.a: elm.o
+%.a: %.o
 	ar rcs $@ $^
 
-elm*.o: 0unit.h elm.h
+$(BUILD_DIR)/*.o: 0unit.h elm.h
+
+dirs:
+	mkdir -p $(BUILD_DIR)
