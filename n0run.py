@@ -48,10 +48,13 @@ def Maker(base=object) : # turns a function into a class with only a constructor
 
 @Maker()
 def RunData(s, command, source) :
+        import os
         from subprocess import Popen, PIPE
         s.command = command
         s.source = source
-        popen = Popen(s.command, stdout=PIPE, stderr=PIPE)
+
+        test_dir = os.environ.get('TEST_DIR', None)
+        popen = Popen(s.command, stdout=PIPE, stderr=PIPE, cwd=test_dir)
 
         s.out, s.err = popen.communicate()
         s.errno = popen.wait()
