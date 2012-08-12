@@ -1,4 +1,5 @@
-CFLAGS=-std=c99 -g  -Wall -Wno-parentheses -Werror
+OPTFLAGS ?= -g -Werror
+CFLAGS = -std=c99 $(OPTFLAGS) -Wall -Wno-parentheses
 
 ALL=elm-test elm-fail
 
@@ -29,5 +30,7 @@ run: elm-test elm-fail
 	./n0run.py test_elm.c ./elm-test ;\
 	./elm-fail-run.py
 
+elm.a: elm.o
+	ar rcs $@ $^
 
 elm*.o: 0unit.h elm.h
