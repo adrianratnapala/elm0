@@ -1,7 +1,7 @@
 BUILD_DIR ?= .
 INSTALL_DIR ?= $(BUILD_DIR)
 
-LIBS=elm.a
+LIBS=elm
 TEST_PROGS=elm-test elm-fail
 
 OPTFLAGS ?= -g -Werror
@@ -9,7 +9,7 @@ CFLAGS = -std=c99 $(OPTFLAGS) -Wall -Wno-parentheses
 
 
 TEST_TARGETS = $(TEST_PROGS:%=$(BUILD_DIR)/%)
-LIB_TARGETS = $(LIBS:%=$(BUILD_DIR)/%)
+LIB_TARGETS = $(LIBS:%=$(BUILD_DIR)/lib%.a)
 
 
 all: dirs $(LIB_TARGETS)
@@ -35,7 +35,7 @@ run: test_progs
 	TEST_DIR=$(BUILD_DIR) ./n0run.py test_elm.c ./elm-test ;\
 	TEST_DIR=$(BUILD_DIR) ./elm-fail-run.py
 
-%.a: %.o
+lib%.a: %.o
 	ar rcs $@ $^
 
 $(BUILD_DIR)/*.o: 0unit.h elm.h
@@ -46,6 +46,6 @@ dirs:
 install: all
 	mkdir -p $(INSTALL_DIR)/lib
 	mkdir -p $(INSTALL_DIR)/include
-	install -m 664 -t $(INSTALL_DIR)/lib     $(BUILD_DIR)/elm.a
+	install -m 664 -t $(INSTALL_DIR)/lib $(LIB_TARGETS)
 	install -m 664 -t $(INSTALL_DIR)/include elm.h 0unit.h
 
