@@ -1,4 +1,5 @@
 BUILD_DIR ?= .
+INSTALL_DIR ?= $(BUILD_DIR)
 
 LIBS=elm.a
 TEST_PROGS=elm-test elm-fail
@@ -41,3 +42,10 @@ $(BUILD_DIR)/*.o: 0unit.h elm.h
 
 dirs:
 	mkdir -p $(BUILD_DIR)
+
+install: all
+	mkdir -p $(INSTALL_DIR)/lib
+	mkdir -p $(INSTALL_DIR)/include
+	install -m 664 -t $(INSTALL_DIR)/lib     $(BUILD_DIR)/elm.a
+	install -m 664 -t $(INSTALL_DIR)/include elm.h 0unit.h
+
