@@ -1,0 +1,82 @@
+#!/bin/sh
+
+ABS_BUILD=$PWD/build/
+ABS_INST=$PWD/inst/
+SRC=src
+
+die() {
+        err=$?
+        echo '*********************************************************' >& 2
+        echo "ERROR $err: " $@ >& 2
+        exit 1
+}
+
+opts=`getopt ps "$@"` || die "Bad command line options."
+set -- $opts
+while [ $# -gt 0 ]
+do
+        case "$1" in
+        (-p) expect_prerelease="yes" ;;
+        (-s) skip_unit_tests="yes" ;;
+        (--)
+                shift
+                break;;
+        (-*)  die "$0: error - unrecognised option $1";;
+        esac
+        shift
+done
+
+ORIG=$1; shift
+[ -z $ORIG ] && die "You must specify the original source repository."
+
+VERNUM=$1; shift
+[ -z $VERNUM ] && die "You must specify the version number."
+
+bad_paths=0
+git --work-tree=$ORIG --git-dir=elm0/.git status --porcelain | (
+        while read stat path
+        do
+                echo "bad path $((++bad_paths)):" $stat $path
+        done
+        exit $bad_paths
+) || die "Some files don't match the repository"
+
+exit
+
+rm -rf  $ABS_BUILD
+rm -rf  $ABS_INST
+rm -rf  $SRC
+
+git clone $ORIG $SRC -b rel/$VERNUM &&
+[ "$skip_unit_tests" = "yes" ] ||\
+        BUILD_DIR=$ABS_BUILD make -C $SRC clean run ||\
+        die "Unit tests failed"
+
+BUILD_DIR=$ABS_BUILD INSTALL_DIR=$ABS_INST make -C $SRC install ||\
+        die "Install failed"
+
+cp $SRC/test_elm.c $ABS_INST && (
+        cd $ABS_INST &&\
+        CFLAGS="-std=c99 -I include/" LDFLAGS="-Llib" LDLIBS="-lelm" \
+                make test_elm || die "Cannot build in install tree"
+        ./test_elm  || die "Test inside install tree failed"
+       )
+
+ver_id=`strings $ABS_INST/lib/libelm.a | grep elm0-` || die "Can't find version string"
+ver=`echo $ver_id | sed 's/ //g'`
+
+if [ x"$expect_prerelease" = x"yes" ]
+then
+        xver="elm0-$VERNUM-"
+        reltype="PRERELEASE"
+else
+        xver="elm0-$VERNUM."
+        reltype="RELEASE"
+fi
+
+[ $ver == "$xver"  ] || die "Got version '$ver', expected '$xver'"
+
+
+echo '---------------------------------------------------------'
+echo "$reltype $xver is OK"
+
