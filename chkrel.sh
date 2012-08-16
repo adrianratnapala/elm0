@@ -1,5 +1,29 @@
 #!/bin/sh
 
+# This program checks that elm0 is ready for release.  Run it from OUTSIDE
+# elm0's git repository with the command:
+#
+#            REPO/chkrel.sh REPO VERSION_NUM
+#
+# e.g.
+#            elm0/chkrel.sh elm0  0.5).
+#
+# This:
+# * Checks that your working directory is clean.  And is on branch
+#   rel/VERSION_NUM.  (-b disables this check.)
+# * Clones the repository, checking out rel/VERSION_NUM.
+# * Checks that the unit tests pass. (-s disables this check)
+# * Does "make install" into a temporary directory.
+#   (building is in a different tempdir)
+# * Checks that quick-and-dirty unit test passes (even with -s).
+# * Checks that the version information compiled into the library is
+#   as expected.  See elm.h for details, but this check includes:
+#        - checking the version number
+#        - checking that this is not a prerelease, unless -p was given
+#          in which case it MUST be a prerelease.
+#
+
+
 ABS_BUILD=$PWD/build/
 ABS_INST=$PWD/inst/
 SRC=src
