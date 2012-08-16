@@ -13,6 +13,9 @@
   malloc  - wrapper for malloc() to allocate memory or die trying.  We never
             return anything but success (in future it will be possible to trap
             failures).
+
+
+  Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
 */
 
 #ifndef ELM_H

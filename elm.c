@@ -1,6 +1,11 @@
-/* ---------------------------------------------------------------------------
-elm: errors, logging and malloc.
+/*----------------------------------------------------------------------------
+  elm.c: errors, logging and malloc.
+
+  (See README for background and elm.h for real documentation).
+
+  Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
 */
+
 
 #define _GNU_SOURCE
 #include <assert.h>

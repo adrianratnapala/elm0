@@ -1,7 +1,11 @@
 #!/bin/sh
-
-# This program checks that elm0 is ready for release.  Run it from OUTSIDE
-# elm0's git repository with the command:
+# chkrel.sh  -- Checks that elm0 is ready for release.
+#
+# Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
+#
+#
+# To check elm0, run this program from OUTSIDE elm0's git repository with the
+# command:
 #
 #            REPO/chkrel.sh REPO VERSION_NUM
 #

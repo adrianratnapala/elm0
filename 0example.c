@@ -1,7 +1,10 @@
-/* 0example.c -- an example of how to use 0unit
+/*----------------------------------------------------------------------------
+  0example.c -- an example of how to use 0unit
 
   0unit is tiny, unit testing helper.  All of its code resides in the single
   header file "0unit.h".  This file is an example of how to test something.
+
+  Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
 */
 
 #include <string.h>

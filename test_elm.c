@@ -1,3 +1,16 @@
+/*----------------------------------------------------------------------------
+  test_elm.c: unit tests for ELM
+
+  These unit tests use 0unit to keep ELM on the straight-and-narrow.  The twist
+  is that we also have to handle various error and panic situations.  Also it's
+  nice to test 0unit itself.  Therefore this test program can be made to
+  produce errors.  And the whole system is then run inside n0run.py which makes
+  sure we fail when expected.
+
+  Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
+*/
+
+
 #define _GNU_SOURCE
 
 #include <assert.h>

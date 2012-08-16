@@ -1,3 +1,17 @@
+# ELM0 Makefile (requires GNU make)
+#
+# See README for an explanation of what ELM0 is.
+#
+#    make  		builds libelm.a  in $(BUILD_DIR)
+#    make test 		builds elm and runs full n0run unit tests.
+#    make clean         deletes all built files
+#    make install       install files into $(INSTALL_DIR)/include
+#                       and                $(INSTALL_DIR)/lib
+#
+# Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
+#
+
+
 BUILD_DIR ?= .
 INSTALL_DIR ?= $(BUILD_DIR)
 
