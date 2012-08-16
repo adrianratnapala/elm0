@@ -77,8 +77,6 @@ then
                 done
                 exit $bad_paths
         ) || die "Some files don't match the repository"
-
-        exit
 fi
 
 rm -rf  $ABS_BUILD
