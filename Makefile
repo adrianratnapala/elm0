@@ -31,7 +31,7 @@ clean:
 	rm -f $(TEST_TARGETS) $(LIB_TARGETS)
 	rm -f *.o
 
-run: test_progs
+test: test_progs
 	TEST_DIR=$(BUILD_DIR) ./n0run.py test_elm.c ./elm-test ;\
 	TEST_DIR=$(BUILD_DIR) ./elm-fail-run.py
 

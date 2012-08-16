@@ -85,7 +85,7 @@ rm -rf  $SRC
 
 git clone $ORIG $SRC -b rel/$VERNUM &&
 [ "$skip_unit_tests" = "yes" ] ||\
-        BUILD_DIR=$ABS_BUILD make -C $SRC clean run ||\
+        BUILD_DIR=$ABS_BUILD make -C $SRC clean test ||\
         die "Unit tests failed"
 
 BUILD_DIR=$ABS_BUILD INSTALL_DIR=$ABS_INST make -C $SRC install ||\
