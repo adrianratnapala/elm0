@@ -1,4 +1,14 @@
 #!/usr/bin/python3
+"""
+  n0run.py -- a unit test runner.
+
+  n0run runs 0unit based tests programs and then does wierd things far beyond
+  the power of 0unit.  We use n0run when we want to make sure that things fail
+  when and "how" they are supposed to, even if the "how" means the error
+  propagates all the way to the top level of the program.
+
+  Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
+"""
 
 import sys
 
@@ -48,10 +58,13 @@ def Maker(base=object) : # turns a function into a class with only a constructor
 
 @Maker()
 def RunData(s, command, source) :
+        import os
         from subprocess import Popen, PIPE
         s.command = command
         s.source = source
-        popen = Popen(s.command, stdout=PIPE, stderr=PIPE)
+
+        test_dir = os.environ.get('TEST_DIR', None)
+        popen = Popen(s.command, stdout=PIPE, stderr=PIPE, cwd=test_dir)
 
         s.out, s.err = popen.communicate()
         s.errno = popen.wait()

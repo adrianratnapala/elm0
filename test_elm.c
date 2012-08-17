@@ -1,3 +1,16 @@
+/*----------------------------------------------------------------------------
+  test_elm.c: unit tests for ELM
+
+  These unit tests use 0unit to keep ELM on the straight-and-narrow.  The twist
+  is that we also have to handle various error and panic situations.  Also it's
+  nice to test 0unit itself.  Therefore this test program can be made to
+  produce errors.  And the whole system is then run inside n0run.py which makes
+  sure we fail when expected.
+
+  Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
+*/
+
+
 #define _GNU_SOURCE
 
 #include <assert.h>
@@ -17,6 +30,45 @@
 #endif
 
 
+// ----------------------------------------------------------------------------
+
+static int test_versions()
+{
+        const char *ver = elm_version();
+        /* I have shown, by hand, that the following fail:
+                ver = "lemo-  0.";
+                ver =  "  0.  4.";
+                ver = "elm0- x0.  4.";
+                ver = "elm0- /0.  4.";
+                ver = "elm0-  0. 4.";
+                ver = "elm0-  0.   4.";
+                ver = "elm0- 0.   4.";
+                ver = "elm0-   0. 4.";
+        */
+        const char *nums = ver + 5;
+
+        CHK(0 == strcmp(ver, ELM_VERSION));
+        CHK(0 <  strcmp(ver, "elm0-  0."));
+        CHK(0 >  strcmp(ver, "elm0-  1."));
+
+        CHK(0 == strncmp(ver, "elm0-", 5));
+        CHK(0 == strlen(nums) % 4);
+
+        for(const char* nu = nums; *nu; nu += 4) {
+                CHK(nu[3] == '.' || nu[3] == '-');
+
+                CHK(nu[2] <= '9'); if(nu[2] < '0') goto s3;
+                CHK(nu[1] <= '9'); if(nu[1] < '0') goto s2;
+                CHK(nu[0] <= '9'); if(nu[0] < '0') goto s1;
+
+                continue;
+        s3:     CHK(nu[2] == ' ');
+        s2:     CHK(nu[1] == ' ');
+        s1:     CHK(nu[0] == ' ');
+        }
+
+        PASS();
+}
 
 // ----------------------------------------------------------------------------
 static int chk_error( Error *err, const ErrorType *type,
@@ -342,6 +394,7 @@ static int test_try_panic()
 
 int main(int argc, const char **argv)
 {
+        test_versions();
 
         test_errors();
         test_error_format();

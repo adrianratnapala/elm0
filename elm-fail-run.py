@@ -1,4 +1,19 @@
 #!/usr/bin/python3
+"""
+  elm-fail-run.py -- extension of n0run.py for when elm should fail.
+
+  n0run.py is a framework for running unit tests and should be independent of
+  the system-under-test.  Used as a program, it just assumes that all tests
+  pass.  But used as a module, it provides classes that can be extended to do
+  more complicated things.  This program is written specifically for doctored
+  versions of the elm unit tests, which we hope will fail or die in specific
+  ways.
+
+  Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
+"""
+
+
+
 
 from n0run import *
 

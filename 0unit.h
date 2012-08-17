@@ -1,3 +1,12 @@
+/*----------------------------------------------------------------------------
+  0unit.h: unit testing without a real framework.
+
+  These are minute definitoins to help you write unit tests.  See 0example.c.
+
+  Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
+*/
+
+
 #ifndef _0UNIT_H
 #define _0UNIT_H
 

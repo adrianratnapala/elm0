@@ -13,6 +13,9 @@
   malloc  - wrapper for malloc() to allocate memory or die trying.  We never
             return anything but success (in future it will be possible to trap
             failures).
+
+
+  Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
 */
 
 #ifndef ELM_H
@@ -26,6 +29,40 @@
 
 #include <stdio.h>
 #include <setjmp.h>
+
+// ---------------------------------------------------------------------------------
+
+/*
+  Elm version IDs are utf-8 strings comprised of "elm0-" followed by a sequence
+  of one or more numbers:
+        * Each number is in the range [0, 1000).
+        * Each number is space padded to three characters.
+        * Each number (including the last!) is followed a "." or "-".
+
+  IDs can be converted reversibly into a conventional looking version strings
+  by stripping out the spaces and any the trailing '.'; unlike conventional
+  strings, IDs can be compared using strcmp().
+
+  Here are some examples:
+        0.5 release         "elm0-  0.  5."
+        0.42 pre            "elm0-  0. 42-"
+        0.42 pre 2          "elm0-  0. 42-  2."   // try not to do this.
+        0.42 release        "elm0-  0. 42."
+        0.42 post           "elm0-  0. 42.   ."
+        0.42.3 release      "elm0-  0. 42.  3."
+
+  Here the unnumbered "pre" and "post" describe everyday builds done during
+  debugging.
+
+  You can obtain the version of elm that you compiled against using the macro:
+*/
+
+#ifndef ELM_VERSION
+#define ELM_VERSION "elm0-  0.  5."
+#endif
+
+/* At run time you can get the version of the linked library using:*/
+extern const char *elm_version();
 
 /*
   Many parts of elm use the LogMeta struct to hold metadata about various
