@@ -58,7 +58,7 @@
 */
 
 #ifndef ELM_VERSION
-#define ELM_VERSION "elm0-  0.  5-"
+#define ELM_VERSION "elm0-  0.  5."
 #endif
 
 /* At run time you can get the version of the linked library using:*/
