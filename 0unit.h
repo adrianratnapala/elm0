@@ -22,13 +22,13 @@
 #endif
 
 #define CHK(T) do {\
-                        if( !chk( !!(T), __FILE__, __LINE__, __func__, #T) ) \
+                        if(!chk(!!(T), __FILE__, __LINE__, __func__, "%s", #T))\
                                 goto fail; \
                } while(0)
 
 #define FAIL(M, ...) do {\
-                        if( !chk( 0, __FILE__, __LINE__, __func__, \
-                                  M, __VA_ARGS__) ) goto fail; \
+                        if(!chk(0, __FILE__, __LINE__, __func__, \
+                                  M, __VA_ARGS__)) goto fail;    \
                } while(0)
 
 #define WRN(M) wrn( 0, __FILE__, __LINE__, __func__, M)
