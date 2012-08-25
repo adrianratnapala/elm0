@@ -29,8 +29,6 @@
 # endif
 #endif
 
-
-
 #include <stdio.h>
 #include <setjmp.h>
 
@@ -44,7 +42,7 @@
         * Each number (including the last!) is followed a "." or "-".
 
   IDs can be converted reversibly into a conventional looking version strings
-  by stripping out the spaces and any the trailing '.'; unlike conventional
+  by stripping out the spaces and any trailing '.'; unlike conventional
   strings, IDs can be compared using strcmp().
 
   Here are some examples:
@@ -65,7 +63,7 @@
 #define ELM_VERSION "elm0-  0.  5.   ."
 #endif
 
-/* At run time you can get the version of the linked library using:*/
+/* At run time you can get the version ID of the linked library using:*/
 extern const char *elm_version();
 
 /*
@@ -83,17 +81,17 @@ struct LogMeta {
 
 
 /*-- Errors -------------------------------------------------------------------
-  Errors are our poor man's version of an exception object.  They are created
-  when some bad event happens, and contain data to describe that event.
+  Errors are our poor man's exception objects.  They are created when some bad
+  event happens, and contain data to describe that event.
 */
 typedef struct Error Error;
 
 
 /*
   In principle, errors can come in multiple, polymorphic types because each
-  error object has a pointer to an method table struct of type ErrorType.
-  (These error types are purely dynamic entities.  At compile time, errors
-  are all of type "Error".)
+  error object has a pointer to an method table which is a C struct of type
+  ErrorType.  Error types are purely runtime entities, not C types; at compile
+  time, errors are all of type "Error".)
 */
 typedef struct ErrorType ErrorType;
 struct ErrorType {
@@ -135,7 +133,7 @@ struct Error {
 extern Error *elm_mkerr(const char *file, int line, const char *func);
 
 /*
-  Elm has two predfined error types.  The most basic is  simply called "error";
+  Elm has two predfined error types.  The most basic is simply called "error";
   it just wraps a message string.  Although you can create error objects with
 
         ERROR_WITH(error, "some message"),
@@ -147,7 +145,6 @@ extern Error *elm_mkerr(const char *file, int line, const char *func);
   Both of these return a pointer to a newly alocated error that must
   be destroyed using destroy_error()
 */
-
 extern Error *init_error(Error *e, const char *zfmt, ...) CHECK_FMT(2);
 extern const ErrorType *const error_type;
 #define ERROR(...) ERROR_WITH(error, __VA_ARGS__ )
@@ -196,7 +193,7 @@ extern void destroy_error(Error *e);
 extern void panic(Error *e);
 
 /*
-   Or you can create a new error in analogy to ERROR and ERROR, and then
+   Or you can create a new error in analogy to ERROR_WITH and ERROR, and then
    immediately panic with it.
 */
 #define PANIC_WITH(T, ...) panic(ERROR_WITH(T, __VA_ARGS__))
@@ -216,15 +213,15 @@ struct PanicReturn {
 };
 
 /*
-    TRY returns either a NULL pointer or an error raised by a panic.  If it
-    returns a NULL, code exectues as normal until a panic, at which point
-    execution returns to the TRY call which will now return the corresponding
-    error.  In addition the ".error" member of the PanicReturn object will also
-    be set to the same error.  Once you no longer want to protect your errors
-    this way, call NO_WORRIES.  Every TRY must have a corresponding NO_WORRIES;
-    any number of TRY / NO_WORRIES pairs can be nested.
+    TRY returns either NULL or an error raised by a panic.  If it returns NULL,
+    code exectues as normal until a panic, at which point execution returns to
+    the TRY call which will now return the corresponding error.  In addition
+    the ".error" member of the PanicReturn object will also be set to the same
+    error.  Once you no longer want to protect your errors this way, call
+    NO_WORRIES.  Every TRY must have a corresponding NO_WORRIES; any number of
+    TRY / NO_WORRIES pairs can be nested.
 
-    One good way to use this  is
+    One good way to use this is
 
         PanicReturn ret;
 
@@ -237,7 +234,6 @@ struct PanicReturn {
         ... do something which might panic() ...
 
         NO_WORRIES(ret)
-
 
     If you get an error that you can't handle, you can always panic again.
     This is because code which executes when "TRY(...) != NULL" behaves as if
@@ -269,8 +265,8 @@ extern Error *_panic_pop(PanicReturn *check);
 extern int _panic_set_return(PanicReturn *ret);
 
 /* One common reason to catch serious errors is in unit tests - to see that
-   code is throwing them when it should.  Assuming you use 0unit, you
-   can make these tests cleaner using:
+   code is throwing them when it should.  Assuming you use 0unit, you can make
+   these tests cleaner using:
 */
 #define CHK_PANIC(T, R)\
         {if( (R).error = TRY((R)) ){          \
@@ -295,10 +291,10 @@ extern int _panic_set_return(PanicReturn *ret);
 
 
 /*-- Logging ------------------------------------------------------------------
-Logger objects take human readable messages about events in your program,
+Logger objects take human-readable messages about events in your program,
 decorate them with metadata and then (optionally) write them some stdio stream
 (FILE*).  Different loggers can decorate messages differently, and write them
-to different streams.  Loggers might also just swallow the messages, this makes
+to different streams.  Loggers might also just swallow the messages; this makes
 it possible to log verbosely, but then suppress annoying messages without
 changing much code.
 */
