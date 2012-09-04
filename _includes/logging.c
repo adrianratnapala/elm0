@@ -1,5 +1,7 @@
 #include <elm.h>
 
+int forty_two=-3;
+
 int main()
 {
         LOG_F(std_log, "The answer is %d", forty_two);

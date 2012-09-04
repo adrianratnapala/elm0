@@ -12,3 +12,9 @@ static int test_something_good()
 
         PASS();
 }
+
+int main()
+{
+        test_something_good();
+}
+

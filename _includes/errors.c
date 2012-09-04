@@ -7,9 +7,10 @@ int just_do_it()
         return 42;
 }
 
-int never_say_die()
+int main()
 {
         // CATCH it, log it, and be cool.
+        Error *err;
         PanicReturn ret;
         if(err = TRY(ret)) {
                 log_error(dbg_log, ret.error);

@@ -1,6 +1,6 @@
 #include <elm.h>
 
-int main
+int main()
 {
         // allocate memory AND handle errors
         char *garbage = MALLOC(20);
@@ -8,6 +8,8 @@ int main
 
         // use it without fear
         garbage[0] = '\0';
+        zeroes[0] = 'a';
 
         return 0;
 }
+
