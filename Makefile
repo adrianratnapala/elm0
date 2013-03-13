@@ -43,7 +43,7 @@ $(BUILD_DIR)/%.o: %.c
 
 clean:
 	rm -f $(TEST_TARGETS) $(LIB_TARGETS)
-	rm -f *.o
+	rm -f $(BUILD_DIR)/*.o
 
 test: test_progs
 	TEST_DIR=$(BUILD_DIR) ./n0run.py test_elm.c ./elm-test ;\
