@@ -289,7 +289,7 @@ no_write:
 }
 
 // A handful of builtin loggers are statically allocated.
-static Logger _std_log = {
+Logger _elm_std_log = {
         ready   : 0,
         stream  : (FILE*)1,
         zname   : "LOG",
@@ -297,7 +297,7 @@ static Logger _std_log = {
         fwrite_prefix : log_prefix,
 };
 
-static Logger _err_log = {
+Logger _elm_err_log = {
         ready   : 0,
         stream  : (FILE*)2,
         zname   : "ERROR",
@@ -305,7 +305,7 @@ static Logger _err_log = {
         fwrite_prefix : log_prefix,
 };
 
-static Logger _dbg_log = {
+Logger _elm_dbg_log = {
         ready   : 0,
         stream  : (FILE*)2,
         zname : "DBG",
@@ -313,18 +313,13 @@ static Logger _dbg_log = {
         fwrite_prefix : dbg_prefix,
 };
 
-static Logger _null_log = {
+Logger _elm_null_log = {
         ready   : 0,
         stream  : (FILE*)0,
         zname : "NULL",
         vprintf : log_vprintf,
         fwrite_prefix : dbg_prefix,
 };
-
-Logger *std_log = &_std_log,
-       *err_log = &_err_log,
-       *dbg_log = &_dbg_log,
-       *null_log = &_null_log;
 
 
 // User created loggers ------.
@@ -473,9 +468,9 @@ int _panic_set_return(PanicReturn *ret)
 
 static void death_panic(Error *e)
 {
-        /*A glorious and righteous hack to hijack the most approriate logger.*/
-        init_static_logger(&_dbg_log);
-        Logger panic_log = _dbg_log;
+        /*A glorious and righteous hack to hijack the most appropriate logger.*/
+        init_static_logger(&_elm_dbg_log);
+        Logger panic_log = _elm_dbg_log;
         panic_log.zname = "PANIC!";
 
         log_error( &panic_log, e);

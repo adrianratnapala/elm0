@@ -22,11 +22,6 @@ class Elm_Fail_Runner(Fail_Runner) :
                 ('NOMEM', br'^NOMEM \(in test_elm.c:(?P<n>test_malloc+)'),
                 ('LOGFAILED', br'^LOGFAILED \(in test_elm.c:(?P<n>test_logging)\)'),
                 ('LOGFAILED', br'^LOGFAILED \(in test_elm.c:(?P<n>test_debug_logger)\)'),
-                ('LOGFAILED', br'^LOGFAILED \(in test_elm.c:(?P<n>test_log_hiding+)\):'+
-                              br' Visible debug.'),
-                ('DBG', br'^DBG \(test_elm.c:[0-9]+ in (?P<n>test_log_hiding+)\):'+
-                        br' Visible debug.'),
-
         ])
 
         def __init__(s, command, source) :
@@ -99,7 +94,6 @@ if __name__ == "__main__":
         results.check_matched('NOMEM', set() )
         results.check_matched('LOGFAILED', {'test_logging',
                                             'test_debug_logger',
-                                            'test_log_hiding',
                                             'main'})
         stderr.flush()
         stdout.flush()
@@ -113,7 +107,6 @@ if __name__ == "__main__":
         results.check_matched('passed', results.run - {'test_logging'} )
         results.check_matched('NOMEM', {'test_malloc'} )
         results.check_matched('LOGFAILED', {'test_logging',
-                                            'test_log_hiding',
                                             'test_debug_logger'})
 
         stderr.flush()

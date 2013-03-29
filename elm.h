@@ -305,11 +305,17 @@ typedef struct Logger Logger;
   Elm defines three loggers, they are always available, without initialisation.
 */
 extern Logger
-       *null_log,// Log to nowhere, swallows all messages,
-       *std_log, // Log to standard output
-       *err_log, // Log to standard error
-       *dbg_log; // Log to standard error, but include medatadata
+       _elm_null_log,// Log to nowhere, swallows all messages,
+       _elm_std_log, // Log to standard output
+       _elm_err_log, // Log to standard error
+       _elm_dbg_log; // Log to standard error, but include medatadata
                  //     (FILENAME:LINENUM in FUNCNAME)
+
+
+#define null_log (&_elm_null_log)
+#define std_log (&_elm_std_log)
+#define err_log (&_elm_err_log)
+#define dbg_log (&_elm_dbg_log)
 
 /*
   One common use for loggers (over printf), is to allow you to write code that

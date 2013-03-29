@@ -253,18 +253,6 @@ static int test_debug_logger()
         PASS();
 }
 
-static int test_log_hiding() {
-        // this test always passes, can do interesting stuff.
-        Logger *old_log = dbg_log;
-        dbg_log = null_log;
-        LOG_F(dbg_log, "Look at mee! I'm invisible!");
-        dbg_log = old_log;
-        if(FAKE_FAIL)
-                LOG_F(dbg_log, "Visible debug.");
-
-        PASS();
-}
-
 // ----------------------------------------------------------------------------
 
 static int test_malloc(int n)
@@ -403,8 +391,6 @@ int main(int argc, const char **argv)
         test_logging();
         test_debug_logger();
         LOG_F(null_log, "EEEK!  I'm invisible!  Don't look!");
-
-        test_log_hiding();
 
         test_try_panic();
         test_recursive_panic();
