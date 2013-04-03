@@ -182,7 +182,7 @@ typedef int (*FWritePrefix)(Logger *lg, LogMeta *meta);
 
 struct Logger {
         /*Loggers decorate messages, and send them to a stream. Or drop them.*/
-        int  ready;
+        int  nrefs;
         FILE *stream;         // the output stream
         const char *zname;    // prefix text emitted before each message
 
@@ -195,7 +195,7 @@ struct Logger {
 static void init_static_logger(Logger *lg)
 /* Idempotently ensures initialisation of builtin loggers before each use. */
 {
-        if(lg->ready)
+        if(lg->nrefs)
                 return;
 
         switch( (uintptr_t)lg->stream ) {
@@ -207,7 +207,7 @@ static void init_static_logger(Logger *lg)
                 break;
         }
 
-        lg->ready = 1;
+        lg->nrefs = -1;
 }
 
 static int log_prefix(Logger *lg, LogMeta *meta)
@@ -290,7 +290,6 @@ no_write:
 
 // A handful of builtin loggers are statically allocated.
 Logger _elm_std_log = {
-        ready   : 0,
         stream  : (FILE*)1,
         zname   : "LOG",
         vprintf : log_vprintf,
@@ -298,7 +297,6 @@ Logger _elm_std_log = {
 };
 
 Logger _elm_err_log = {
-        ready   : 0,
         stream  : (FILE*)2,
         zname   : "ERROR",
         vprintf : log_vprintf,
@@ -306,7 +304,6 @@ Logger _elm_err_log = {
 };
 
 Logger _elm_dbg_log = {
-        ready   : 0,
         stream  : (FILE*)2,
         zname : "DBG",
         vprintf : log_vprintf,
@@ -314,7 +311,6 @@ Logger _elm_dbg_log = {
 };
 
 Logger _elm_null_log = {
-        ready   : 0,
         stream  : (FILE*)0,
         zname : "NULL",
         vprintf : log_vprintf,
@@ -347,15 +343,34 @@ Logger *new_logger(const char *zname, FILE *stream, const char *opts)
         lg->fwrite_prefix = fwp;
         lg->zname = strdup(zname);
 
-        lg->ready = 1;
+        lg->nrefs = 1;
         return lg;
 }
 
-void destroy_logger(Logger *lg)
-/* Frees a non-builtin logger. DO NOT USE ON STATIC LOGGERS */
+Logger *ref_logger(Logger *lg)
 {
+        int nrefs = lg->nrefs;
+        if(nrefs > 0)
+                lg->nrefs = ++nrefs;
+        return lg;
+}
+
+Error *destroy_logger(Logger *lg)
+/* Frees a non-builtin logger. */
+{
+        if(!lg)
+                return NULL;
+        int nrefs = lg->nrefs;
+        if(nrefs <= 0) // static logger, do not touch.
+                return NULL;
+        if(--nrefs) {
+                lg->nrefs = nrefs;
+                return NULL;
+        }
+
         free((char*)lg->zname);
         free(lg);
+        return NULL;
 }
 
 

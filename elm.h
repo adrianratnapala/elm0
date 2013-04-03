@@ -339,12 +339,15 @@ extern Logger *new_logger(const char *zname, FILE *stream, const char *opts);
   the debug logger).  All other option characters are ignored, in this version
   of elm.  opts==NULL is equivalent to opts="".
 
-  You can destroy a logger  with
+  Loggers are reference counted, you can increment and decrement references
+  using:
 */
-void destroy_logger(Logger *lg);
+Logger *ref_logger(Logger *lg);
+Error *destroy_logger(Logger *lg);
 /*
-  but do not call this on a standard logger, it is only for objects returned
-  by new_logger.
+  (In spite of its name, `destroy_logger` only destroys the logger when
+  the reference count drops to zero).  These function do nothing at all
+  to the standard (statically allocated) loggers.
 */
 
 /*

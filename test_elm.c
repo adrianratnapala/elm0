@@ -224,10 +224,71 @@ static int test_logging()
         PASS();
 }
 
+
+static int test_logger_refcounts()
+{
+        static const char *expected_text =
+                "TEST: Logging with two refs.\n"
+                "TEST: Logging with oen ref!\n"
+                ;
+
+        size_t size;
+        char *buf;
+
+        FILE *mstream = open_memstream(&buf, &size);
+        CHK(mstream != NULL);
+
+        Logger *lg  = new_logger("TEST", mstream, NULL);
+        CHK(lg);
+
+        CHK(lg == ref_logger(lg));
+
+        if(!FAKE_FAIL) {
+                CHK(LOG_F(lg, "Logging with two refs.") == 29);
+                CHK(!memcmp(buf, expected_text, size));
+
+                CHK(NULL == destroy_logger(lg));
+                CHK(LOG_F(lg, "Logging with oen ref!") == 28);
+                CHK(!memcmp(buf, expected_text, size));
+        }
+
+        destroy_logger(lg);
+        fclose(mstream);
+        free(buf);
+
+        PASS();
+}
+
+static int test_static_logger_refcounts()
+{
+        CHK(NULL == destroy_logger(null_log));
+        CHK(NULL == destroy_logger(dbg_log));
+        CHK(NULL == destroy_logger(std_log));
+        CHK(NULL == destroy_logger(err_log));
+
+        // if it works, valgrind won't complain
+        CHK(NULL == destroy_logger(null_log));
+        CHK(NULL == destroy_logger(dbg_log));
+        CHK(NULL == destroy_logger(std_log));
+        CHK(NULL == destroy_logger(err_log));
+
+        // null_log is the only one we can cleanly write to
+        CHK(0 == LOG_F(null_log, "I'm still alive!"));
+
+        // if it works, valgrind won't complain
+        CHK(null_log == ref_logger(null_log));
+        CHK(dbg_log  == ref_logger(dbg_log));
+        CHK(std_log  == ref_logger(std_log));
+        CHK(err_log  == ref_logger(err_log));
+
+        PASS();
+}
+
 static int test_debug_logger()
 {
         size_t size;
         char *buf, *expect;
+
 
         FILE *mstream = open_memstream(&buf, &size);
         CHK( mstream != NULL );
@@ -391,6 +452,8 @@ int main(int argc, const char **argv)
         test_logging();
         test_debug_logger();
         LOG_F(null_log, "EEEK!  I'm invisible!  Don't look!");
+        test_logger_refcounts();
+        test_static_logger_refcounts();
 
         test_try_panic();
         test_recursive_panic();
