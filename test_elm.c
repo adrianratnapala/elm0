@@ -190,6 +190,66 @@ static int test_variadic_system_error()
         PASS();
 }
 
+static int test_unpack_system_error()
+{
+        void *UNTOUCHED_PTR = (void*)0xfafafaf;
+        Error *e = NULL;
+        char *zname = NULL, *zmsg = NULL;
+
+        //If `e` is NULL, sys_error returns zero,... it ignores zname and zmsg
+        zmsg = zname = UNTOUCHED_PTR;
+        CHK(0 == sys_error(NULL, &zname, &zmsg));
+        CHK(zname == NULL && zmsg == NULL);
+
+        //If `e` points to an error OTHER than SYS_ERROR, it returns -1...
+        e = ERROR("I am not a sys error.");
+        zmsg = zname = UNTOUCHED_PTR;
+        CHK(-1 == sys_error(e, &zname, &zmsg));
+        CHK(zname == NULL && zmsg == NULL);
+        destroy_error(e);
+
+        //If `e` is a SYS_ERROR, but there is no file, zname is cleared NULL ...
+        e = SYS_ERROR(42, "I am not a sys error.");
+        zmsg = zname = UNTOUCHED_PTR;
+        CHK(42 == sys_error(e, &zname, NULL));
+        CHK(zmsg == UNTOUCHED_PTR && zname == NULL);
+        destroy_error(e);
+
+        //Otherwise returns errno
+        e = IO_ERROR("in a cake", ENOENT, "format(%d)", 33);
+
+        //if zname != NULL, *zname is the filename
+        zmsg = zname = UNTOUCHED_PTR;
+        CHK(ENOENT == sys_error(e, NULL, NULL));
+        CHK(zname == UNTOUCHED_PTR && zmsg == UNTOUCHED_PTR);
+
+        zmsg = zname = UNTOUCHED_PTR;
+        CHK(ENOENT == sys_error(e, &zname, NULL));
+        CHK(zmsg == UNTOUCHED_PTR && zname && !strcmp(zname, "in a cake"));
+        free(zname);
+        zname = NULL;
+
+        //*zmsg is the msg_prefix after substituting format varargs.
+        zmsg = zname = UNTOUCHED_PTR;
+        CHK(ENOENT == sys_error(e, NULL, &zmsg));
+        CHK(zname == UNTOUCHED_PTR && zmsg && !strcmp(zmsg, "format(33)"));
+        free(zmsg);
+        zmsg = NULL;
+
+        zmsg = zname = UNTOUCHED_PTR;
+        CHK(ENOENT == sys_error(e, &zname, &zmsg));
+        CHK(zname && !strcmp(zname, "in a cake"));
+        CHK(zmsg && !strcmp(zmsg, "format(33)"));
+
+        free(zname);
+        free(zmsg);
+
+        destroy_error(e);
+
+        PASS();
+}
+
+
 // ----------------------------------------------------------------------------
 
 static int test_logging()
@@ -469,6 +529,7 @@ int main(int argc, const char **argv)
 
         test_system_error();
         test_variadic_system_error();
+        test_unpack_system_error();
 
         test_logging();
         test_debug_logger();

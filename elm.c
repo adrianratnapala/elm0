@@ -106,7 +106,6 @@ typedef struct
 int sys_error_fwrite(Error *e, FILE *out)
 /* Write error to stdio in human readable form. */
 {
-        // because I'm eeevil, because I'm evil, I'm, eeevil, evil.
         Sys_Error  *se = e->data;
         const char *es = strerror(se->errnum);
 
@@ -135,7 +134,6 @@ Error *init_sys_error(Error *e, const char* zname, int errnum,
                 PANIC("SYS_ERROR %s (errno = %d)", zfmt, errnum);
         va_end(va);
 
-
         int nmsg  = strlen(zmsg) + 1;
         int nname = (zname ? strlen(zname) + 1 : 0);
         Sys_Error *se = malloc(sizeof(Sys_Error) + nmsg + nname );
@@ -159,6 +157,30 @@ Error *init_sys_error(Error *e, const char* zname, int errnum,
         free(zmsg);
         errno = 0;
         return e;
+}
+
+
+int sys_error(Error *e, char **zname, char **zmsg)
+{
+        if(zname)
+                *zname = NULL;
+        if(zmsg)
+                *zmsg = NULL;
+
+        if(!e)
+                return 0;
+        if(e->type != sys_error_type)
+                return -1;
+
+        Sys_Error *se = e->data;
+
+        const char *n = se->zname;
+        if(zname && n && !(*zname = strdup(n)))
+                PANIC_NOMEM();
+        if((zmsg) && !(*zmsg = strdup(se->zmsg)))
+                PANIC_NOMEM();
+
+        return se->errnum;
 }
 
 

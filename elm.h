@@ -121,6 +121,9 @@ struct Error {
   The constructor must set the "type" and "data" fields, but don't worry about
   "meta", it will be set for you.  The constructor must return the same pointer
   "e" that it was given.
+
+  Since struct Error is not opaque, you can also use these fields in whatever
+  code handles an error (but see sys_error, log_error and keep_first_error).
 */
 
 /*
@@ -173,13 +176,23 @@ extern const ErrorType *const sys_error_type;
 #define SYS_PANIC(N,...) panic(SYS_ERROR(N, __VA_ARGS__))
 #define IO_PANIC(F,N,...) panic(IO_ERROR(F,N, __VA_ARGS__))
 
+/* You can unpack a SYS_ERROR (or IO_ERROR) with: */
+extern int sys_error(Error *e, char **zname, char **zmsg);
+/*
+   If `e` is NULL, sys_error returns zero, if `e` points to an error OTHER than
+   SYS_ERROR, it returns -1; in both these cases it ignores zname and zmasg.
+   Otherwise returns errno; if zname != NULL, *zname is the filename (or null
+   if none exists), if zmsg != NULL *zmsg is the same as strerror(returned
+   errno), or null if there is no SYS_ERROR.  Both strings are returned in
+   free()'able buffers.
+*/
+
 
 /*
   To discard an error object, call destroy_error.  This will first call the
   cleanup() method, and then free the object itself.
 */
 extern void destroy_error(Error *e);
-
 
 /*-- Panic --------------------------------------------------------------------
   Extreme errors can be handled using panic(), which either:
