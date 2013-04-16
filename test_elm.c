@@ -128,6 +128,22 @@ static int test_error_format()
         PASS();
 }
 
+static int test_keep_first_error()
+{
+        Error *e1, *e2;
+        CHK(NULL == keep_first_error(NULL, NULL));
+
+        e1 = ERROR("one");
+        CHK(e1 == keep_first_error(e1, NULL));
+        CHK(e1 == keep_first_error(NULL, e1));
+
+        e2 = ERROR("two");
+        CHK(e1 == keep_first_error(e1, e2));
+
+        destroy_error(e1);
+        PASS();
+}
+
 static int test_system_error()
 {
         char *xerror;
@@ -526,6 +542,7 @@ int main(int argc, const char **argv)
 
         test_errors();
         test_error_format();
+        test_keep_first_error();
 
         test_system_error();
         test_variadic_system_error();

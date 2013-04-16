@@ -61,6 +61,16 @@ void destroy_error(Error *e)
         free(e);
 }
 
+Error *keep_first_error(Error *one, Error *two)
+{
+        if(!one)
+                return two;
+        destroy_error(two);
+        return one;
+}
+
+
+
 // -- Message Error - Just wraps a message string in an error object.
 
 

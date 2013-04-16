@@ -194,6 +194,17 @@ extern int sys_error(Error *e, char **zname, char **zmsg);
 */
 extern void destroy_error(Error *e);
 
+/*
+  Sometimes you want to push through a sequence of operations that might fail,
+  and only report one of the errors (usually the first).  A helper for this is:
+*/
+extern Error *keep_first_error(Error *one, Error *two);
+/*
+  This function returns `one` unless it is NULL and two is not-NULL.  Any
+  unused error is silently destroyed.
+*/
+
+
 /*-- Panic --------------------------------------------------------------------
   Extreme errors can be handled using panic(), which either:
         -> Logs a standard error and then calls exit(), or
