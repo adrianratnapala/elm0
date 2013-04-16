@@ -124,13 +124,26 @@ static const ErrorType _sys_error_type = {
 
 const ErrorType *const sys_error_type = &_sys_error_type;
 
-Error *init_sys_error(Error *e, const char* zname, int errnum, const char *zmsg)
+Error *init_sys_error(Error *e, const char* zname, int errnum,
+                      const char *zfmt, ...)
 {
+        char *zmsg = NULL;
+        va_list va;
+
+        va_start(va, zfmt);
+        if(vasprintf(&zmsg, zfmt, va) < 0) //do the next best thing.
+                PANIC("SYS_ERROR %s (errno = %d)", zfmt, errnum);
+        va_end(va);
+
+
         int nmsg  = strlen(zmsg) + 1;
         int nname = (zname ? strlen(zname) + 1 : 0);
         Sys_Error *se = malloc(sizeof(Sys_Error) + nmsg + nname );
-        if(!se)
+        if(!se) {
+                free(zmsg);
                 panic_nomem(e->meta.file, e->meta.line, e->meta.func);
+        }
+
         se->errnum = errnum;
         memcpy(se->zmsg,  zmsg,  nmsg);
         if(!zname)
@@ -143,6 +156,7 @@ Error *init_sys_error(Error *e, const char* zname, int errnum, const char *zmsg)
         e->type = sys_error_type;
         e->data = se;
 
+        free(zmsg);
         errno = 0;
         return e;
 }

@@ -153,24 +153,25 @@ extern const ErrorType *const error_type;
   The other predefined error type is sys_error, which wraps up `errno` like
   error codes.  If you have an errno, you can do:
 
-        SYS_ERROR(errno, msg_prefix)
+        SYS_ERROR(errno, msg_prefix[, ...])
 
-  If your error is linked to a specific file which you know the name of, then
-  you should use:
+  msg_prefix is an explanation of what you were doing when the error happened;
+  it can also take printf-like varargs.  If your error is linked to a specific
+  file which you know the name of, then you should use:
 
-        IO_ERROR(filename, errno, msg_prefix)
+        IO_ERROR(filename, errno, msg_prefix[, ...])
 
   But in spite of the name, IO_ERROR actually produces a normal SYS_ERROR
   object.
 */
 extern Error *init_sys_error(Error *e, const char* zname, int errnum,
-                                       const char *zmsg);
+                                       const char *zmsg, ...);
 extern const ErrorType *const sys_error_type;
-#define SYS_ERROR(N,M) ERROR_WITH(sys_error,  0, (N), (M))
-#define IO_ERROR(F,N,M) ERROR_WITH(sys_error, F, (N), (M))
+#define SYS_ERROR(N,...) ERROR_WITH(sys_error,  0, (N), __VA_ARGS__)
+#define IO_ERROR(F,N,...) ERROR_WITH(sys_error, F, (N), __VA_ARGS__)
 
-#define SYS_PANIC(N,M) panic(SYS_ERROR(N,M))
-#define IO_PANIC(F,N,M) panic(IO_ERROR(F,N,M))
+#define SYS_PANIC(N,...) panic(SYS_ERROR(N, __VA_ARGS__))
+#define IO_PANIC(F,N,...) panic(IO_ERROR(F,N, __VA_ARGS__))
 
 
 /*

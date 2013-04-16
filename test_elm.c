@@ -170,6 +170,25 @@ static int test_system_error()
         PASS();
 }
 
+static int test_variadic_system_error()
+{
+        char *xerror;
+
+        Error *eno = SYS_ERROR(ENOTTY, "tty %d, %x", 12, 15);
+        asprintf(&xerror, "tty 12, f: %s", strerror(ENOTTY));
+        CHK( chk_error(eno, sys_error_type, xerror) );
+        destroy_error(eno);
+        free(xerror);
+
+        Error *enf = IO_ERROR("every thing", ENOENT, "%d", 42);
+        asprintf(&xerror, "42 (every thing): %s", strerror(ENOENT));
+        CHK( chk_error(enf, sys_error_type, xerror) );
+        destroy_error(enf);
+        free(xerror);
+
+
+        PASS();
+}
 
 // ----------------------------------------------------------------------------
 
@@ -447,7 +466,9 @@ int main(int argc, const char **argv)
 
         test_errors();
         test_error_format();
+
         test_system_error();
+        test_variadic_system_error();
 
         test_logging();
         test_debug_logger();
