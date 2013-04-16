@@ -52,7 +52,9 @@ Error *elm_mkerr(const char *file, int line, const char *func)
 void destroy_error(Error *e)
 /* calls an error's cleanup method, and then free()s the error. */
 {
-        assert(e);
+        if(!e)
+                return;
+
         assert(e->type);
         if(e->type->cleanup)
                 e->type->cleanup(e->data);
