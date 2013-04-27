@@ -97,19 +97,25 @@ typedef struct ErrorType ErrorType;
 struct ErrorType {
         /* fwrite sends a human readable representation to a stdio stream. */
         int  (*fwrite)(Error *e, FILE *out);
-        /* cleanup is called once the object is no longer needed.  */
+        /* cleanup destroys error->data.  Usually this will be free() */
         void (*cleanup)(void *data);
 };
 
 /*
   To define a new error type named "my_error", you need to define the two
   methods above, and then define an ErrorType struct which points to them.
-  Finally you need to write a constructor function of the signature *and name*:
+  Must be visible to  Anyone who uses this "my_error" must be able to see
+  pointer the declared as:
+
+        extern const ErrorType *const my_error_type;
+
+  They also need to see a constructor:
 
         Error *init_my_error(Error *e)
 
-  Where "e" is an already allocated object which must be initialised.  The
-  error struct is defined as:
+  Where "e" is an already allocated object which must be initialised.  NOTE:
+  for both these declarations, the signatures *and names* are significant.  The
+  macro-magic below depends on both.
 */
 struct Error {
         const ErrorType *type;  // method table
@@ -133,10 +139,10 @@ struct Error {
 #define ERROR_WITH(T, ...) \
         init_##T( elm_mkerr(__FILE__,__LINE__,__func__), __VA_ARGS__ )
 
-extern Error *elm_mkerr(const char *file, int line, const char *func);
+Error *elm_mkerr(const char *file, int line, const char *func);
 
 /*
-  Elm has two predfined error types.  The most basic is simply called "error";
+  Elm has two predefined error types.  The most basic is simply called "error";
   it just wraps a message string.  Although you can create error objects with
 
         ERROR_WITH(error, "some message"),
@@ -148,9 +154,19 @@ extern Error *elm_mkerr(const char *file, int line, const char *func);
   Both of these return a pointer to a newly alocated error that must
   be destroyed using destroy_error()
 */
-extern Error *init_error(Error *e, const char *zfmt, ...) CHECK_FMT(2);
-extern const ErrorType *const error_type;
+Error *init_error(Error *e, const char *zfmt, ...) CHECK_FMT(2);
+const ErrorType *const error_type;
 #define ERROR(...) ERROR_WITH(error, __VA_ARGS__ )
+
+/* If you want to write a thin wrapper over this type, then write your own
+   constructor and use init_error_v as a back-end (instead of init_error).  The
+   method-table can then use:
+
+        .fwrite = error_fwrite,
+        .cleanup = free
+*/
+Error *init_error_v(Error *e, const char *zfmt, va_list va);
+int error_fwrite(Error *e, FILE *out);
 
 /*
   The other predefined error type is sys_error, which wraps up `errno` like

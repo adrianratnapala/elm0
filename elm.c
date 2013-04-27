@@ -74,7 +74,7 @@ Error *keep_first_error(Error *one, Error *two)
 // -- Message Error - Just wraps a message string in an error object.
 
 
-static int error_fwrite(Error *e, FILE *out)
+int error_fwrite(Error *e, FILE *out)
 /* Write error to stdio in human readable form. */
 {
         return fwrite(e->data, 1, strlen(e->data), out);
@@ -93,15 +93,21 @@ static const ErrorType _error_type = {
 
 const ErrorType *const error_type = &_error_type;
 
-Error *init_error(Error *e, const char *zfmt, ...)
+extern Error *init_error_v(Error *e, const char *zfmt, va_list va)
 {
         e->type = error_type;
         e->data = (char*)zfmt; // in case of panic
-
-        va_list va;
-        va_start(va, zfmt);
         if( vasprintf((char**)&e->data, zfmt, va) < 0 )
                 panic(e);
+
+        return e;
+}
+
+Error *init_error(Error *e, const char *zfmt, ...)
+{
+        va_list va;
+        va_start(va, zfmt);
+        init_error_v(e, zfmt, va);
         va_end(va);
         return e;
 }
