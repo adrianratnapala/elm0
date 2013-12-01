@@ -60,7 +60,9 @@
 */
 
 #ifndef ELM_VERSION
-#define ELM_VERSION "elm0-  0.  5.   ."
+//#define ELM_VERSION "elm0-  0.  6    ."  // post-release
+//#define ELM_VERSION "elm0-  0.  6."     // exact-release
+#define ELM_VERSION "elm0-  0.  6-"  // pre-release
 #endif
 
 /* At run time you can get the version ID of the linked library using:*/

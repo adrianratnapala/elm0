@@ -33,18 +33,25 @@
 // ----------------------------------------------------------------------------
 
 static int test_versions()
+/* This test is fairly thin.  It
+  (a) Checks that the runtime version is the same as the compile-time
+      version (since test_elm is always built with elm).
+  (b) It does some syntax validation on that string.
+
+  By hand I have shown that the following invalid version strings
+  fail the syntax validation:
+
+        ver = "lemo-  0.";
+        ver =  "  0.  4.";
+        ver = "elm0- x0.  4.";
+        ver = "elm0- /0.  4.";
+        ver = "elm0-  0. 4.";
+        ver = "elm0-  0.   4.";
+        ver = "elm0- 0.   4.";
+        ver = "elm0-   0. 4.";
+*/
 {
         const char *ver = elm_version();
-        /* I have shown, by hand, that the following fail:
-                ver = "lemo-  0.";
-                ver =  "  0.  4.";
-                ver = "elm0- x0.  4.";
-                ver = "elm0- /0.  4.";
-                ver = "elm0-  0. 4.";
-                ver = "elm0-  0.   4.";
-                ver = "elm0- 0.   4.";
-                ver = "elm0-   0. 4.";
-        */
         const char *nums = ver + 5;
 
         CHK(0 == strcmp(ver, ELM_VERSION));
