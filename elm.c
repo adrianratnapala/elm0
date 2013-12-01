@@ -216,28 +216,30 @@ int sys_error(Error *e, char **zname, char **zmsg)
 
 // Raw Stderr -----------------------------------------------------------------
 
-static void emergency_write(const char *str)
+static ssize_t emergency_write(const char *str)
 {
-        write(2, str, strlen(str));
+        return write(2, str, strlen(str));
 }
 
-static void emergency_message(const char *pre, LogMeta *meta, const char *post)
+static int emergency_message(const char *pre, LogMeta *meta, const char *post)
 /* Log to stderr without using stdio. meta is ignored if it equals NULL. */
 {
-        emergency_write(pre);
+        int n = 0;
+        n += emergency_write(pre);
 
         if(meta) {
-                emergency_write(" (in ");
-                emergency_write(meta->file);
-                emergency_write(":");
-                emergency_write(meta->func);
-                emergency_write(")");
+                n += emergency_write(" (in ");
+                n += emergency_write(meta->file);
+                n += emergency_write(":");
+                n += emergency_write(meta->func);
+                n += emergency_write(")");
         }
 
-        emergency_write(": ");
-        emergency_write(post);
-        emergency_write("\n");
+        n += emergency_write(": ");
+        n += emergency_write(post);
+        n += emergency_write("\n");
         fsync(2);
+        return n;
 }
 
 // Logs -----------------------------------------------------------------------
