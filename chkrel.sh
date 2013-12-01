@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # chkrel.sh  -- Checks that elm0 is ready for release.
 #
 # Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
@@ -10,7 +10,7 @@
 #            REPO/chkrel.sh REPO VERSION_NUM
 #
 # e.g.
-#            elm0/chkrel.sh elm0  0.5).
+#            elm0/chkrel.sh elm0  0.5.
 #
 # This:
 # * Checks that your working directory is clean.  And is on branch
@@ -61,7 +61,7 @@ ORIG=$1; shift
 VERNUM=$1; shift
 [ -z $VERNUM ] && die "You must specify the version number."
 
-ORIG_GIT="git --work-tree=$ORIG --git-dir=elm0/.git"
+ORIG_GIT="git --work-tree=$ORIG --git-dir=$ORIG/.git"
 
 # -- check that work dir is on the expected branch, and is clean.
 if [ "$ignore_work_tree" != "yes" ]
@@ -114,7 +114,7 @@ else
         reltype="RELEASE"
 fi
 
-[ $ver == "$xver"  ] || die "Got version '$ver', expected '$xver'"
+[ "$ver" == "$xver"  ] || die "Got version '$ver', expected '$xver'"
 
 
 echo '---------------------------------------------------------'
