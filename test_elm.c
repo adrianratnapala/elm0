@@ -578,6 +578,15 @@ int main(int argc, const char **argv)
         test_recursive_panic();
         if( argc > 1 && !strcmp(argv[1], "--panic") )
                 PANIC("The slithy toves!"); //FIX
+        if( argc > 1 && !strncmp(argv[1], "--panic=", 8) ) {
+                const char *start = argv[1] + 8;
+                char *end = NULL;
+                long ern = strtol(start, &end, 0);
+                assert(end != start && end != NULL);
+                SYS_PANIC(ern, "Panic");
+
+                PANIC("The slithy toves!"); //FIX
+        }
         if(FAKE_FAIL)
                 runtests_malloc_fail();
         else

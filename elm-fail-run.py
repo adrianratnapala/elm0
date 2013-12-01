@@ -37,14 +37,20 @@ class Elm_Fail_Runner(Fail_Runner) :
                                 s.data.errno, s.data.command)
 
 class Panic_Runner(Fail_Runner) :
-        def __init__(s, command, source) :
-                Fail_Runner.__init__(s, [command, '--panic'], source ) ;
+        def __init__(s, command, source, xerrno=None) :
+                s.xerrno = 255
+                panic_arg = '--panic'
+                if xerrno is not None:
+                        s.xerrno = xerrno
+                        panic_arg += ('=%d' % xerrno)
+
+                Fail_Runner.__init__(s, [command, panic_arg], source ) ;
 
         def check_output(s) :
                 for err in Fail_Runner.check_output(s) :
                         yield err
 
-                if s.data.errno != 255 :
+                if s.data.errno != s.xerrno :
                         yield Fail("test program failed but not with 255",
                                 s.data.errno, s.data.command)
 
@@ -53,7 +59,7 @@ class Elm_Panic_Runner(Panic_Runner) :
         # FIX: the different errors do not have very consistent formats
         err_matchers = Elm_Fail_Runner.err_matchers + compile_matchers ([
                 ('PANIC', br'^PANIC! \(test_elm.c:[0-9]+ in (?P<n>main)\):'+
-                          br' The slithy toves!'),
+                          br' .*'),
                 ])
 
 
@@ -82,6 +88,21 @@ if __name__ == "__main__":
         results.check_matched('PANIC', {'main',});
         stderr.flush()
         stdout.flush()
+
+        print('elm-test with SYS_PANIC ...')
+        trunner  = Elm_Panic_Runner('./elm-test', 'test_elm.c', xerrno=13)
+        tresults = run_main(trunner)
+        results = tresults
+
+        results.check_found( results.run - {'main'} )
+        results.check_run( results.src - {'test_malloc'} )
+        results.check_matched('passed', results.run - {'main'} )
+        results.check_matched('NOMEM', set() )
+        results.check_matched('PANIC', {'main',});
+        stderr.flush()
+        stdout.flush()
+
+
 
         print('elm-fail with panic ...')
         prunner  = Elm_Fail_Panic_Runner('./elm-fail', 'test_elm.c')

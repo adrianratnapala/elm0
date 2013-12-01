@@ -555,7 +555,7 @@ static void death_panic(Error *e)
         panic_log.zname = "PANIC!";
 
         log_error( &panic_log, e);
-        exit(-1);
+        exit(sys_error(e, NULL, NULL));
 }
 
 void panic(Error *e)
