@@ -34,8 +34,14 @@ const char *elm_version()
         return ELM_VERSION;
 }
 
+
 // Errors ---------------------------------------------------------------------
 
+static void panic_nomem(const char* file, int line, const char *func)
+/* Report an out-of-memory condition with panic(). */
+{
+        panic(error_nomem(file, line, func));
+}
 
 Error *elm_mkerr(const ErrorType *etype, const char *file, int line, const char *func)
 /* malloc()s an error & fills out the metadata. */
@@ -516,16 +522,14 @@ static int nomem_fwrite(Error *e, FILE *out)
         return emergency_message("NOMEM", &nomem_error.meta, "Out of virtual memory");
 }
 
-
-void panic_nomem(const char* file, int line, const char *func)
-/* Report an out-of-memory conditions with panic(). */
+Error *error_nomem(const char* file, int line, const char *func)
 {
         nomem_error.meta = (LogMeta){
                 file : file,
                 line : line,
                 func : func,
         };
-        panic(&nomem_error);
+        return &nomem_error;
 }
 
 void *malloc_or_die(const char* file, int line, const char *func, size_t n)

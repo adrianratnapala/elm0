@@ -459,17 +459,33 @@ static int test_malloc(int n)
         PASS();
 }
 
-static int test_bad_malloc(void)
+static const struct rlimit *setup_rlimit(size_t lim, struct rlimit *_new_lim)
 {
-        struct rlimit old_lim;
+        static struct rlimit old_lim;
         getrlimit(RLIMIT_AS, &old_lim);
 
         struct rlimit new_lim = {
-                .rlim_cur = 128*1024*1024,
+                .rlim_cur = lim,
                 .rlim_max = old_lim.rlim_max,
         };
+        if(setrlimit(RLIMIT_AS, &new_lim))
+                return NULL;
 
-        CHK(!setrlimit(RLIMIT_AS, &new_lim));
+        if(_new_lim)
+                *_new_lim = new_lim;
+        return &old_lim;
+}
+
+static int teardown_rlimit(const struct rlimit *old_lim)
+{
+        return setrlimit(RLIMIT_AS, old_lim);
+}
+
+static int test_bad_malloc(void)
+{
+        const struct rlimit *old_lim;
+        struct rlimit new_lim;
+        CHK(old_lim = setup_rlimit(128*1024*1024, &new_lim));
 
         PanicReturn ret;
         Error *expected_nomem = TRY(ret);
@@ -483,7 +499,7 @@ static int test_bad_malloc(void)
         CHK(expected_nomem->type == nomem_error_type);
         destroy_error(expected_nomem);
 
-        CHK(!setrlimit(RLIMIT_AS, &old_lim));
+        CHK(!teardown_rlimit(old_lim));
         PASS();
 }
 
