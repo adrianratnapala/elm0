@@ -459,6 +459,34 @@ static int test_malloc(int n)
         PASS();
 }
 
+static int test_bad_malloc(void)
+{
+        struct rlimit old_lim;
+        getrlimit(RLIMIT_AS, &old_lim);
+
+        struct rlimit new_lim = {
+                .rlim_cur = 128*1024*1024,
+                .rlim_max = old_lim.rlim_max,
+        };
+
+        CHK(!setrlimit(RLIMIT_AS, &new_lim));
+
+        PanicReturn ret;
+        Error *expected_nomem = TRY(ret);
+        if(!expected_nomem) {
+                CHK(!malloc(2 * new_lim.rlim_cur));
+                MALLOC(new_lim.rlim_cur);
+                CHK(!"Unreachable code reached.");
+                NO_WORRIES(ret);
+        }
+
+        CHK(expected_nomem->type == nomem_error_type);
+        destroy_error(expected_nomem);
+
+        CHK(!setrlimit(RLIMIT_AS, &old_lim));
+        PASS();
+}
+
 
 static int runtests_malloc_fail(void)
 {
@@ -473,6 +501,8 @@ static int runtests_malloc_fail(void)
         test_malloc(mem_lim.rlim_cur);
         return 0;
 }
+
+
 
 // ----------------------------------------------------------------------------
 
@@ -567,6 +597,8 @@ int main(int argc, const char **argv)
         test_system_error();
         test_variadic_system_error();
         test_unpack_system_error();
+
+        test_bad_malloc();
 
         test_logging();
         test_debug_logger();

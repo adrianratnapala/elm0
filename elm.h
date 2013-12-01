@@ -465,6 +465,8 @@ extern int log_error(Logger *lg, Error *err);
 */
 
 
+extern const ErrorType *const nomem_error_type;
+
 extern void panic_nomem(const char* file, int line, const char *func);
 extern void *malloc_or_die(const char* file, int line, const char *func, size_t n);
 extern void *zalloc_or_die(const char* file, int line, const char *func, size_t n);

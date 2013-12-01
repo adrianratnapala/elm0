@@ -67,7 +67,8 @@ void destroy_error(Error *e)
         else
                 free(e->data);
 
-        free(e);
+        if(e->type != nomem_error_type)
+                free(e);
 }
 
 Error *keep_first_error(Error *one, Error *two)
@@ -323,6 +324,12 @@ int log_error(Logger *lg, Error *err)
                 return 0;
 
 
+        // this has to be a special case, else LibC might do its own malloc
+        ErrorType *etype = err->type;
+        if(etype == nomem_error_type)
+                return etype->fwrite(err, lg->stream /* probably ignored */);
+
+
         if(FAKE_FAIL)
                 goto no_write;
 
@@ -486,17 +493,39 @@ int log_f(Logger *lg,
         conditionally do a longjmp to a place where you can try to carry on.
 */
 
-// FIX: these should just take a LogMeta pointer
-void panic_nomem(const char* file, int line, const char *func)
-/* Report an out-of-memory conditions and then exit the program */
+static int nomem_fwrite(Error *e, FILE *out);
+
+static const ErrorType _nomem_error_type = {
+        fwrite    : nomem_fwrite,
+        cleanup   : NULL,
+};
+
+const ErrorType *const nomem_error_type = &_nomem_error_type;
+
+static Error nomem_error =  {
+        .type = &_nomem_error_type,
+        .meta = {
+                .line = -1,
+                .file = "",
+                .func = "",
+        }
+};
+
+static int nomem_fwrite(Error *e, FILE *out)
 {
-        LogMeta meta = {
+        return emergency_message("NOMEM", &nomem_error.meta, "Out of virtual memory");
+}
+
+
+void panic_nomem(const char* file, int line, const char *func)
+/* Report an out-of-memory conditions with panic(). */
+{
+        nomem_error.meta = (LogMeta){
                 file : file,
                 line : line,
                 func : func,
         };
-        emergency_message("NOMEM", &meta, "Out of virtual memory");
-        exit(ENOMEM);
+        panic(&nomem_error);
 }
 
 void *malloc_or_die(const char* file, int line, const char *func, size_t n)
@@ -555,7 +584,8 @@ static void death_panic(Error *e)
         panic_log.zname = "PANIC!";
 
         log_error( &panic_log, e);
-        exit(sys_error(e, NULL, NULL));
+
+        exit(e->type == nomem_error_type ? ENOMEM : sys_error(e, NULL, NULL));
 }
 
 void panic(Error *e)
