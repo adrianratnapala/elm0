@@ -184,11 +184,21 @@ class Fail_Runner(Runner) :
         matchers = match_passed + match_failed
         command_pre = ['valgrind', '-q']
 
+        def __init__(s, command, source, xerrno=None) :
+                s.xerrno = xerrno
+                Runner.__init__(s, command, source)
+
         def check_output(s) :
                 if s.data.errno == 0 :
                         s.errno = -1
                         yield Fail("test program should have failed "
                                    "but did not", -1, s.data.command)
+                if s.xerrno is None :
+                        return
+
+                if s.data.errno != s.xerrno :
+                        yield Fail("test program failed but not with %d" % s.xerrno,
+                                s.data.errno, s.data.command)
 
         def scan_output(s) :
                 out, oe = scan_output(s.lines, s.matchers)

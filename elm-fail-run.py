@@ -25,9 +25,10 @@ class Elm_Fail_Runner(Fail_Runner) :
         ])
 
         def __init__(s, command, source) :
-                Fail_Runner.__init__(s, [command], source ) ;
+                import errno
+                Fail_Runner.__init__(s, [command], source, xerrno=errno.ENOMEM ) ;
 
-        def check_output(s) :
+        def pheck_output(s) :
                 for err in Fail_Runner.check_output(s) :
                         yield err
 
@@ -38,20 +39,20 @@ class Elm_Fail_Runner(Fail_Runner) :
 
 class Panic_Runner(Fail_Runner) :
         def __init__(s, command, source, xerrno=None) :
-                s.xerrno = 255
-                panic_arg = '--panic'
-                if xerrno is not None:
-                        s.xerrno = xerrno
-                        panic_arg += ('=%d' % xerrno)
+                if xerrno is None:
+                        xerrno = 255
+                        panic_arg = '--panic'
+                else:
+                        panic_arg = ('--panic=%d' % xerrno)
 
-                Fail_Runner.__init__(s, [command, panic_arg], source ) ;
+                Fail_Runner.__init__(s, [command, panic_arg], source, xerrno=xerrno ) ;
 
-        def check_output(s) :
+        def peck_output(s) :
                 for err in Fail_Runner.check_output(s) :
                         yield err
 
                 if s.data.errno != s.xerrno :
-                        yield Fail("test program failed but not with 255",
+                        yield Fail("test program failed but not with %d" % s.xerrno,
                                 s.data.errno, s.data.command)
 
 
