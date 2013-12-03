@@ -107,8 +107,17 @@ Error *init_error(Error *e, const char *zfmt, ...)
 {
         va_list va;
         va_start(va, zfmt);
-        init_error_v(e, zfmt, va);
+
+        PanicReturn ret;
+        Error *pe = TRY(ret);
+        if(!pe) {
+                init_error_v(e, zfmt, va);
+                NO_WORRIES(ret);
+        }
         va_end(va);
+
+        if(pe)
+                panic(pe);
         return e;
 }
 
@@ -148,9 +157,10 @@ Error *init_sys_error(Error *e, const char* zname, int errnum,
         va_list va;
 
         va_start(va, zfmt);
-        if(vasprintf(&zmsg, zfmt, va) < 0) //do the next best thing.
-                PANIC("SYS_ERROR %s (errno = %d)", zfmt, errnum);
+        int n = vasprintf(&zmsg, zfmt, va);
         va_end(va);
+        if(n < 0) //do the next best thing.
+                PANIC("SYS_ERROR %s (errno = %d)", zfmt, errnum);
 
         int nmsg  = strlen(zmsg) + 1;
         int nname = (zname ? strlen(zname) + 1 : 0);
