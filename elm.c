@@ -58,6 +58,9 @@ void destroy_error(Error *e)
         assert(e->type);
         if(e->type->cleanup)
                 e->type->cleanup(e->data);
+        else
+                free(e->data);
+
         free(e);
 }
 
@@ -83,15 +86,7 @@ int error_fwrite(Error *e, FILE *out)
         return fwrite(e->data, 1, strlen(e->data), out);
 }
 
-void error_cleanup(Error *e)
-/* Called when the error is discarded, before it is free()d. */
-{
-        free(e->data);
-}
-
-static const ErrorType _error_type = {
-        cleanup   : free
-};
+static const ErrorType _error_type = {0};
 
 const ErrorType *const error_type = &_error_type;
 
