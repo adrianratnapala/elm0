@@ -88,7 +88,7 @@ static int chk_error( Error *err, const ErrorType *type,
         CHK( err );
         CHK( err->type == type );
         CHK( mstream = open_memstream(&buf, &size) );
-        CHK( type->fwrite(err, mstream) == strlen(zvalue) );
+        CHK( error_fwrite(err, mstream) == strlen(zvalue) );
         fclose(mstream);
 
         CHK( size == strlen(zvalue) );

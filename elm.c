@@ -73,10 +73,13 @@ Error *keep_first_error(Error *one, Error *two)
 
 // -- Message Error - Just wraps a message string in an error object.
 
-
 int error_fwrite(Error *e, FILE *out)
 /* Write error to stdio in human readable form. */
 {
+        const ErrorType *etype = e->type;
+        int (*cb)(Error *, FILE*) = etype->fwrite;
+        if(cb)
+                return cb(e, out);
         return fwrite(e->data, 1, strlen(e->data), out);
 }
 
@@ -87,7 +90,6 @@ void error_cleanup(Error *e)
 }
 
 static const ErrorType _error_type = {
-        fwrite    : error_fwrite,
         cleanup   : free
 };
 
@@ -319,8 +321,6 @@ int log_error(Logger *lg, Error *err)
         if(!lg->stream) // is this a null log?
                 return 0;
 
-        const ErrorType *etype = err->type;
-        assert(etype);
 
         if(FAKE_FAIL)
                 goto no_write;
@@ -330,9 +330,7 @@ int log_error(Logger *lg, Error *err)
                 goto no_write;
 
         // ask the error to write its own text
-        int nbody = etype->fwrite(err, lg->stream);
-        if ( nbody <= 0 )
-                goto no_write;
+        int nbody = error_fwrite(err, lg->stream);
 
         if ( fputc('\n', lg->stream) == EOF)
                 goto no_write;
