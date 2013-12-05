@@ -139,9 +139,9 @@ struct Error {
         ERROR_WITH(T, type specific arguments)
 */
 #define ERROR_WITH(T, ...) \
-        init_##T( elm_mkerr(__FILE__,__LINE__,__func__), __VA_ARGS__ )
+        init_##T( elm_mkerr(T##_type, __FILE__,__LINE__,__func__), __VA_ARGS__ )
 
-Error *elm_mkerr(const char *file, int line, const char *func);
+Error *elm_mkerr(const ErrorType *etype, const char *file, int line, const char *func);
 
 /*
   Elm has two predefined error types.  The most basic is simply called "error";

@@ -36,16 +36,22 @@ const char *elm_version()
 
 // Errors ---------------------------------------------------------------------
 
-Error *elm_mkerr(const char *file, int line, const char *func)
+
+Error *elm_mkerr(const ErrorType *etype, const char *file, int line, const char *func)
 /* malloc()s an error & fills out the metadata. */
 {
         Error* e = malloc(sizeof(Error));
         if(!e)
                 panic_nomem(file, line, func);
 
-        e->meta.file = file;
-        e->meta.line = line;
-        e->meta.func = func;
+        *e = (Error){
+                .type = etype,
+                .meta = (LogMeta) {
+                        .file = file,
+                        .line = line,
+                        .func = func,
+                },
+        };
         return e;
 }
 
@@ -92,7 +98,6 @@ const ErrorType *const error_type = &_error_type;
 
 extern Error *init_error_v(Error *e, const char *zfmt, va_list va)
 {
-        e->type = error_type;
         e->data = (char*)zfmt; // in case of panic
         if( vasprintf((char**)&e->data, zfmt, va) < 0 )
                 panic(e);
@@ -176,7 +181,6 @@ Error *init_sys_error(Error *e, const char* zname, int errnum,
                 memcpy(se->zname, zname, nname);
         }
 
-        e->type = sys_error_type;
         e->data = se;
 
         free(zmsg);
