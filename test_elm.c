@@ -135,6 +135,18 @@ static int test_error_format()
         PASS();
 }
 
+static int test_simple_custom_error()
+{
+        ErrorType _sc_error_type = {0},
+                  *sc_error_type = &_sc_error_type;
+
+        Error *e = ERROR_WITH(sc_error, "Custom error %d", 42);
+        CHK(chk_error(e, sc_error_type, "Custom error 42"));
+        destroy_error(e);
+
+        PASS();
+}
+
 static int test_keep_first_error()
 {
         Error *e1, *e2;
@@ -550,6 +562,7 @@ int main(int argc, const char **argv)
         test_errors();
         test_error_format();
         test_keep_first_error();
+        test_simple_custom_error();
 
         test_system_error();
         test_variadic_system_error();
