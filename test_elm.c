@@ -311,7 +311,7 @@ static int test_logging()
         LOG_UNLESS(lg, -1+4 == 8);
         CHK( size == 18 + 21 + 16 );
 
-        Error *e = ERROR_WITH(error, "goodbye world!");
+        Error *e = ERROR("goodbye world!");
         CHK( log_error(nlg, e) == 0 );
         CHK( log_error(lg, e) == 21 );
         CHK( size == 18 + 21 + 16 + 21 );

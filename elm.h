@@ -134,12 +134,13 @@ struct Error {
   code handles an error (but see sys_error, log_error and keep_first_error).
 */
 
+
 /*
-  You will create an error of arbitrary type T using the macro.
-        ERROR_WITH(T, type specific arguments)
+  You will need to develop your own macro for constructing custom errors.  You
+  should use one of the following two helpers.
 */
-#define ERROR_WITH(T, ...) \
-        init_##T( elm_mkerr(T##_type, __FILE__,__LINE__,__func__), __VA_ARGS__ )
+#define ERROR_ALLOC(T) elm_mkerr(T##_type, __FILE__,__LINE__,__func__)
+#define ERROR_WITH(T, ...) init_error( ERROR_ALLOC(T), __VA_ARGS__ )
 
 Error *elm_mkerr(const ErrorType *etype, const char *file, int line, const char *func);
 
@@ -188,8 +189,9 @@ int error_fwrite(Error *e, FILE *out);
 extern Error *init_sys_error(Error *e, const char* zname, int errnum,
                                        const char *zmsg, ...);
 extern const ErrorType *const sys_error_type;
-#define SYS_ERROR(N,...) ERROR_WITH(sys_error,  0, (N), __VA_ARGS__)
-#define IO_ERROR(F,N,...) ERROR_WITH(sys_error, F, (N), __VA_ARGS__)
+#define IO_ERROR(F,N,...) \
+        init_sys_error(ERROR_ALLOC(sys_error), F, (N), __VA_ARGS__)
+#define SYS_ERROR(N,...)  IO_ERROR(0, N, __VA_ARGS__)
 
 #define SYS_PANIC(N,...) panic(SYS_ERROR(N, __VA_ARGS__))
 #define IO_PANIC(F,N,...) panic(IO_ERROR(F,N, __VA_ARGS__))
