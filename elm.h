@@ -88,37 +88,75 @@ struct LogMeta {
 */
 typedef struct Error Error;
 
+/* You can write an error to a stream using: */
+int error_fwrite(Error *e, FILE *out);
+
+/* To discard an error object, call destroy_error. */
+extern void destroy_error(Error *e);
 
 /*
-  In principle, errors can come in multiple, polymorphic types because each
-  error object has a pointer to an method table which is a C struct of type
-  ErrorType.  Error types are purely runtime entities, not C types; at compile
-  time, errors are all of type "Error".)
+  Sometimes you want to push through a sequence of operations that might fail,
+  and only report one of the errors (usually the first).  A helper for this is:
 */
-typedef struct ErrorType ErrorType;
-struct ErrorType {
-        /* fwrite sends a human readable representation to a stdio stream. */
-        int  (*fwrite)(Error *e, FILE *out);
-        /* cleanup destroys error->data.  Usually this will be free() */
-        void (*cleanup)(void *data);
-};
+extern Error *keep_first_error(Error *one, Error *two);
+/*
+  This function returns `one` unless it is NULL and two is not-NULL.  Any
+  unused error is silently destroyed.
+*/
 
 /*
-  To define a new error type named "my_error", you need to define the two
-  methods above, and then define an ErrorType struct which points to them.
-  Must be visible to  Anyone who uses this "my_error" must be able to see
-  pointer the declared as:
-
-        extern const ErrorType *const my_error_type;
-
-  They also need to see a constructor:
-
-        Error *init_my_error(Error *e)
-
-  Where "e" is an already allocated object which must be initialised.  NOTE:
-  for both these declarations, the signatures *and names* are significant.  The
-  macro-magic below depends on both.
+  The compile-time C type of all errors is `Error *`; but at run-time each
+  error has a field `error->type` which can be compared to known constants.
+  These constants are actually pointers to C structs of type:
 */
+typedef const struct ErrorType ErrorType;
+
+/*
+  Some error types are pre-defined by ELM0, the simplest is plain-old
+  `error_type`.  You can generate plain errors created by passing a printf-like
+  message string to the ERROR macro.  For example:
+
+        return ERROR("There were %d %s sitting on the wall.", -3, "bottles");
+
+  The formated message will be printed every time `error_fwrite` is called.
+*/
+ErrorType *const error_type;
+#define ERROR(...) ERROR_WITH(error, __VA_ARGS__)
+
+/*
+  You can define your own error types.  The easiest case is when you want
+  errors that behave just like plain errors, but which have some non-standard
+  type-constant.  For this, just create zero-filled ErrorType struct:
+
+        ErrorType _my_error_type = {0},
+                  *my_error_type = &_my_error_type;
+
+  Generate errors of this type by calling:
+
+        ERROR_WITH(my_error, "Only %d bottles left", 2)
+
+
+  I recommend for each new type you define, you wrap ERROR_WITH in two macros:
+
+       #define MY_ERROR(msg, ...) ERROR_WITH(my_error, msg, __VA_ARGS__)
+       #define MY_PANIC(msg, ...) panic(MY_ERROR(msg, __VA_ARGS__))
+
+  (see below for a discussion of `panic`).
+*/
+
+Error *elm_mkerr(const ErrorType *etype, const char *file, int line, const char *func);
+Error *init_error(Error *e, const char *zfmt, ...) CHECK_FMT(2);
+#define ERROR_ALLOC(T) elm_mkerr(T##_type, __FILE__,__LINE__,__func__)
+#define ERROR_WITH(T, ...) init_error(ERROR_ALLOC(T), __VA_ARGS__)
+
+/*
+  Notice the error is actually created with ERROR_ALLOC, but initialised by
+  `init_error`.  You must always use ERROR_ALLOC, but you can define your own
+  initialiser functions (constructors).
+
+  To see how, lets look at the Error struct itself:
+*/
+
 struct Error {
         const ErrorType *type;  // method table
         void      *data;  // different error types define meanings for this
@@ -126,54 +164,49 @@ struct Error {
 };
 
 /*
-  The constructor must set the "type" and "data" fields, but don't worry about
-  "meta", it will be set for you.  The constructor must return the same pointer
-  "e" that it was given.
+  `.type` and `.meta` are initialised for you by ERROR_ALLOC.  `data` is
+  initialised to NULL; but the default behaviour (which happens when your
+  ErrorType is zero-filled) is that `error_fwrite` and `destroy_error` treat it
+  as a human-readable, null-terminated string that can destroyed using
+  `free()`.
 
-  Since struct Error is not opaque, you can also use these fields in whatever
-  code handles an error (but see sys_error, log_error and keep_first_error).
+  So you might define your type as
+
+        Error *my_error_init(Error* e, const char *arg_s, int arg_n)
+        {
+                e->data = ... some free()able string  ....
+                return e;
+        }
+
+        #define MY_ERROR(S, N) my_error_init(ERROR_ALLOC(my_error), S, N)
+        #define MY_PANIC(S, N) panic(MY_ERROR(S, N))
+
+  Note that the intialiser must always return the error it was given.
+
+
+  You can customise further by implementing non-default method for ErrorType.
+  These are defined as:
 */
 
+struct ErrorType {
+        /* fwrite sends a human readable representation to a stdio stream. */
+        int  (*fwrite)(Error *e, FILE *out);
+        /* cleanup error->data. */
+        void (*cleanup)(void *data);
+};
 
 /*
-  You will need to develop your own macro for constructing custom errors.  You
-  should use one of the following two helpers.
-*/
-#define ERROR_ALLOC(T) elm_mkerr(T##_type, __FILE__,__LINE__,__func__)
-#define ERROR_WITH(T, ...) init_error( ERROR_ALLOC(T), __VA_ARGS__ )
+  Now you `data` pointer can be anything and it is your responsibility to make
+  sure the constructor, `.fwrite` and `.cleanup` work together to handle it.
 
-Error *elm_mkerr(const ErrorType *etype, const char *file, int line, const char *func);
+  * If `.fwrite` is non-null, then `error_fwrite` simply wraps your method.
+  * If `.cleanup` is non-null it is responsible for deallocating your `data`
+    only, `destroy_error` will take care of the Error object itself.
 
-/*
-  Elm has two predefined error types.  The most basic is simply called "error";
-  it just wraps a message string.  Although you can create error objects with
 
-        ERROR_WITH(error, "some message"),
 
-  you will normally use the shortcut:
-
-        ERROR("some message")
-
-  Both of these return a pointer to a newly alocated error that must
-  be destroyed using destroy_error()
-*/
-Error *init_error(Error *e, const char *zfmt, ...) CHECK_FMT(2);
-const ErrorType *const error_type;
-#define ERROR(...) ERROR_WITH(error, __VA_ARGS__ )
-
-/* If you want to write a thin wrapper over this type, then write your own
-   constructor and use init_error_v as a back-end (instead of init_error).  The
-   method-table can then use:
-
-        .fwrite = error_fwrite,
-        .cleanup = free
-*/
-Error *init_error_v(Error *e, const char *zfmt, va_list va);
-int error_fwrite(Error *e, FILE *out);
-
-/*
-  The other predefined error type is sys_error, which wraps up `errno` like
-  error codes.  If you have an errno, you can do:
+  For an example of this mechanism, look at the el predefined type `sys_error`
+  which wraps up `errno` like error codes.  If you have an errno, you can do:
 
         SYS_ERROR(errno, msg_prefix[, ...])
 
@@ -183,8 +216,7 @@ int error_fwrite(Error *e, FILE *out);
 
         IO_ERROR(filename, errno, msg_prefix[, ...])
 
-  But in spite of the name, IO_ERROR actually produces a normal SYS_ERROR
-  object.
+  But in spite of the name, IO_ERROR actually produces a SYS_ERROR object.
 */
 extern Error *init_sys_error(Error *e, const char* zname, int errnum,
                                        const char *zmsg, ...);
@@ -205,23 +237,6 @@ extern int sys_error(Error *e, char **zname, char **zmsg);
    if none exists), if zmsg != NULL *zmsg is the same as strerror(returned
    errno), or null if there is no SYS_ERROR.  Both strings are returned in
    free()'able buffers.
-*/
-
-
-/*
-  To discard an error object, call destroy_error.  This will first call the
-  cleanup() method, and then free the object itself.
-*/
-extern void destroy_error(Error *e);
-
-/*
-  Sometimes you want to push through a sequence of operations that might fail,
-  and only report one of the errors (usually the first).  A helper for this is:
-*/
-extern Error *keep_first_error(Error *one, Error *two);
-/*
-  This function returns `one` unless it is NULL and two is not-NULL.  Any
-  unused error is silently destroyed.
 */
 
 
