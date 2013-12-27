@@ -331,6 +331,9 @@ int log_error(Logger *lg, Error *err)
 
         // ask the error to write its own text
         int nbody = error_fwrite(err, lg->stream);
+        if(nbody < 0)
+                goto no_write;
+
 
         if ( fputc('\n', lg->stream) == EOF)
                 goto no_write;
