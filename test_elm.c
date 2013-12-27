@@ -433,8 +433,9 @@ static int test_debug_logger()
 static int test_malloc(int n)
 {
         // ------------------
-        char *ttk = ZALLOC(n);
-        CHK( ttk != NULL );
+        char *ttk = MALLOC(n);
+        CHK(ttk != NULL);
+        memset(ttk, 0, n);
         ttk[10] = '5';
 
         CHK( n > 2048);

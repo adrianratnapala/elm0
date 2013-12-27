@@ -469,12 +469,10 @@ extern const ErrorType *const nomem_error_type;
 
 extern Error *error_nomem(const char* file, int line, const char *func);
 extern void *malloc_or_die(const char* file, int line, const char *func, size_t n);
-extern void *zalloc_or_die(const char* file, int line, const char *func, size_t n);
 #define PANIC_NOMEM() panic(ERROR_NOMEM())
 #define ERROR_NOMEM() error_nomem(__FILE__, __LINE__, __func__)
 
 #define MALLOC(N) malloc_or_die(__FILE__, __LINE__, __func__, N)
-#define ZALLOC(N) zalloc_or_die(__FILE__, __LINE__, __func__, N)
 
 
 

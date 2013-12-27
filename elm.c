@@ -542,17 +542,6 @@ void *malloc_or_die(const char* file, int line, const char *func, size_t n)
         return 0;
 }
 
-void *zalloc_or_die(const char* file, int line, const char *func, size_t n)
-{
-        void *ret = calloc(1, n);
-        if( ret )
-                return ret;
-
-        panic_nomem(file, line, func);
-        return 0;
-}
-
-
 // -- Panic ----------------------------
 
 static PanicReturn *_panic_return;
