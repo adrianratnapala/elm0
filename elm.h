@@ -467,6 +467,10 @@ extern int log_error(Logger *lg, Error *err);
 
 extern const ErrorType *const nomem_error_type;
 
+typedef int(*PanicRescue)();
+
+PanicRescue panic_rescue_nomem(PanicRescue new_rescue);
+
 extern Error *error_nomem(const char* file, int line, const char *func);
 extern void *malloc_or_die(const char* file, int line, const char *func, size_t n);
 #define PANIC_NOMEM() panic(ERROR_NOMEM())

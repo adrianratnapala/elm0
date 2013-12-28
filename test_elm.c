@@ -504,6 +504,35 @@ static int test_bad_malloc(void)
         PASS();
 }
 
+const struct rlimit *fix_rlimit;
+
+static int nomem_rescue()
+// Callback set by test_rescued_alloc, lifts the artificial memory limit.
+{
+        if(teardown_rlimit(fix_rlimit))
+                return -1;
+        fix_rlimit = NULL;
+        return 0;
+}
+
+static int test_rescued_malloc(void)
+{
+        struct rlimit new_lim;
+        CHK(fix_rlimit = setup_rlimit(72*1024*1024, &new_lim));
+
+        PanicRescue old_rescue = panic_rescue_nomem(nomem_rescue);
+
+        void *good_memory = NULL;
+        CHK(good_memory = MALLOC(128*1024*1024));
+        CHK(!fix_rlimit); // can pass only if nomem_rescue was called.
+        free(good_memory);
+
+        CHK(panic_rescue_nomem(old_rescue) == nomem_rescue);
+        CHK(old_rescue == panic_rescue_nomem(NULL));
+        CHK(old_rescue == panic_rescue_nomem(NULL));
+
+        PASS();
+}
 
 static int runtests_malloc_fail(void)
 {
@@ -616,6 +645,7 @@ int main(int argc, const char **argv)
         test_unpack_system_error();
 
         test_bad_malloc();
+        test_rescued_malloc();
 
         test_logging();
         test_debug_logger();

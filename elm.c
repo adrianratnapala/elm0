@@ -37,6 +37,11 @@ const char *elm_version()
 
 // Errors ---------------------------------------------------------------------
 
+static int no_rescue()
+{
+        return -1;
+}
+
 static void panic_nomem(const char* file, int line, const char *func)
 /* Report an out-of-memory condition with panic(). */
 {
@@ -532,10 +537,22 @@ Error *error_nomem(const char* file, int line, const char *func)
         return &nomem_error;
 }
 
+static PanicRescue nomem_rescue = no_rescue;
+
+PanicRescue panic_rescue_nomem(PanicRescue new_rescue)
+{
+        PanicRescue old = nomem_rescue;
+        if(new_rescue)
+                nomem_rescue = new_rescue;
+        return old;
+}
+
 void *malloc_or_die(const char* file, int line, const char *func, size_t n)
 {
         void *ret = malloc(n);
-        if( ret )
+        if(ret)
+                return ret;
+        if(!nomem_rescue() && (ret = malloc(n)))
                 return ret;
 
         panic_nomem(file, line, func);
