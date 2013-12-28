@@ -42,10 +42,11 @@ static int no_rescue()
         return -1;
 }
 
-static void panic_nomem(const char* file, int line, const char *func)
+static void* panic_nomem(const char* file, int line, const char *func)
 /* Report an out-of-memory condition with panic(). */
 {
         panic(error_nomem(file, line, func));
+        return NULL;
 }
 
 Error *elm_mkerr(const ErrorType *etype, const char *file, int line, const char *func)
