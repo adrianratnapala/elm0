@@ -9,7 +9,7 @@ Copyright (C) 2012, Adrian Ratnapala, under the ISC license. See file LICENSE.
 
 
 ELM0 is a pair of very small tool-kits, called ELM and 0unit, for programming
-in C99.  They do in one place some essential tasks required by all programs.
+in C.  They do in one place some essential tasks required by all programs.
 
 0unit is a helper for unit testing. Being tiny, it can not be a true testing
 framework; but it still makes it easy to write useful tests.  See the example
@@ -40,8 +40,8 @@ can throw them into any old program without introducing bloat or complexity.
 elm.a is a < 10 KiB static library and 0unit is a single header file.
 
 Detailed documentation is in example.c and elm.h; the rest of this document is
-about how install ELM0, how to compile against it and about ELM0's requirements
-and limitations
+about how install ELM0, how to compile against it and about ELM0's
+requirements and limitations
 
 
 How to install ELM0
@@ -85,32 +85,21 @@ Requirements and Limitations
 ----------------------------
 
 This version of 0unit has been tested under Linux using GCC version 4.7.0.  It
-certainly requires C99.  It also uses some glibc features which exist on *BSD,
-but are not standard in C99 or POSIX.  None of these limits is fundamental;
-portability will improve when ELM0 is used and tested on more platforms.  If
-you want to try a new platform, then create an issue at
+certainly requires at least C99.  It also uses some glibc features which exist
+on *BSD, but are not standard in C99 or POSIX.  None of these limits is
+fundamental; portability will improve when ELM0 is used and tested on more
+platforms.  If you want to try a new platform, then create an issue at
 
         https://github.com/adrianratnapala/elm0/issues.
 
 To run the unit tests you also need Valgrind and Python 3.
 
-In addition to these requirements, this version ELM0 has two major limitations:
-
-- You cannot recover if malloc() fails inside elm0, not even with panic
-  (exception) catching.
-
-- The panic-catching is not thread safe.
-
-Both of these problems will be fixed when ELM0 is used by an application that
-needs to do better.  If you want to use ELM0 for such an application, then make
-your point heard at one or more of:
+Currently, elm0 has one big limitation: the panic-catching is not thread safe.
+This will be fixed when when ELM0 is used by an application that needs to do
+better.  If you want to use ELM0 for such an application, then make your point
+heard at:
 
 - https://github.com/adrianratnapala/elm0/issues/1
         panic-catching is not thread safe.
 
-- https://github.com/adrianratnapala/elm0/issues/2
-        malloc() failures cannot be caught.
-
-- https://github.com/adrianratnapala/elm0/issues/3
-        ELM can't be used without generating untrappable nomem panics.
 
