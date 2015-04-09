@@ -20,7 +20,7 @@ TEST_PROGS=elm-test elm-fail
 
 OPTFLAGS ?= -g -Werror
 CFLAGS = -std=c99 $(OPTFLAGS) -Wall -Wno-parentheses
-
+LDFLAGS= $(LDOPTFLAGS)
 
 TEST_TARGETS = $(TEST_PROGS:%=$(BUILD_DIR)/%)
 LIB_TARGETS = $(LIBS:%=$(BUILD_DIR)/lib%.a)
