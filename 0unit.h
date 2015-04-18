@@ -26,12 +26,12 @@
                                 goto fail; \
                } while(0)
 
-#define FAIL(M, ...) do {\
+#define FAIL(...) do {\
                         if(!chk(0, __FILE__, __LINE__, __func__, \
-                                  M, __VA_ARGS__)) goto fail;    \
+                                   __VA_ARGS__)) goto fail;      \
                } while(0)
 
-#define WRN(M) wrn( 0, __FILE__, __LINE__, __func__, M)
+#define WRN(...) wrn( 0, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
 
 #define PASS()                   \
