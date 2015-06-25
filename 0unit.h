@@ -30,7 +30,6 @@
 #define FAIL(...) CHKV(0, __VA_ARGS__)
 #define WRN(...) wrn( 0, __FILE__, __LINE__, __func__, __VA_ARGS__)
 
-
 #define PASS()                   \
         return pass( __func__ ); \
         goto fail;               \
@@ -46,6 +45,8 @@
         goto fail;               \
         fail:                    \
         return 0
+
+#define ZUNIT_ANSI_COLOUR(d, s) "\033[" #d "m\033[1m" s "\033[0m"
 
 inline static int fail(const char *prefix,
                        const char *file, int line, const char *test,
@@ -67,7 +68,7 @@ inline static int chk(int pass, const char *file, int line, const char *test,
                 return 1;
         va_list va;
         va_start(va, fmt);
-        return fail("\033[31m\033[1mFAILED:\033[0m", file, line, test, fmt, va);
+        return fail(ZUNIT_ANSI_COLOUR(31, "FAILED:"), file, line, test, fmt, va);
 }
 
 CHECK_FMT(5)
@@ -78,13 +79,13 @@ inline static int wrn(int pass, const char *file, int line, const char *test,
                 return 1;
         va_list va;
         va_start(va, fmt);
-        return fail("\033[34m\033[1mWARNING:\033[0m", file, line, test, fmt, va);
+        return fail(ZUNIT_ANSI_COLOUR(31, "WARNING:"), file, line, test, fmt, va);
 }
 
 
 inline static int pass(const char *test) {
-        printf("\033[32m\033[1mpassed:\033[0m %s\n", test);
+        printf(ZUNIT_ANSI_COLOUR(32, "passed:")" %s\n", test);
         return 1;
 }
 
-#endif /* _0UNIT_H */
+#endif /* _ZUNIT_H */
