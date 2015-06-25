@@ -403,7 +403,6 @@ static int test_debug_logger()
         size_t size;
         char *buf, *expect;
 
-
         FILE *mstream = open_memstream(&buf, &size);
         CHK( mstream != NULL );
 
@@ -670,5 +669,7 @@ int main(int argc, const char **argv)
                 runtests_malloc_fail();
         else
                 test_malloc(128 * 1024);
+
+        return zunit_report();
 }
 

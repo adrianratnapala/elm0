@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------
-  0unit.h: unit testing without a real framework.
+  zunit.h: unit testing without a real framework.
 
   These are minute definitoins to help you write unit tests.  See 0example.c.
 
@@ -46,13 +46,29 @@
         fail:                    \
         return 0
 
+
 #define ZUNIT_ANSI_COLOUR(d, s) "\033[" #d "m\033[1m" s "\033[0m"
+
+static int zunit_npass = 0;
+static int zunit_nfail = 0;
+
+inline static int zunit_report()
+{
+        if(!zunit_nfail) {
+                printf(ZUNIT_ANSI_COLOUR(32, "All %d tests passed\n"), zunit_npass);
+                return 0;
+        }
+
+        printf(ZUNIT_ANSI_COLOUR(31, "%d of %d tests FAILED.\n"), zunit_nfail, zunit_nfail + zunit_npass);
+        return !!zunit_nfail;
+}
 
 inline static int fail(const char *prefix,
                        const char *file, int line, const char *test,
                        const char *fmt, va_list va)
 {
         printf("%s %s:%d:%s <", prefix, file, line, test);
+        zunit_nfail++;
         vprintf(fmt, va);
         printf(">\n");
         fflush(stdout);
@@ -85,6 +101,7 @@ inline static int wrn(int pass, const char *file, int line, const char *test,
 
 inline static int pass(const char *test) {
         printf(ZUNIT_ANSI_COLOUR(32, "passed:")" %s\n", test);
+        zunit_npass++;
         return 1;
 }
 

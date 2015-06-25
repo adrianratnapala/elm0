@@ -128,8 +128,10 @@ def compile_matchers(sources) :
 
         return list(map(compile_one, sources))
 
-match_passed = compile_matchers([ ('passed', b'^passed: (?P<n>test\S*)') ])
+match_passed = compile_matchers([ ('passed', b'^passed: (?P<n>test\S*)'), ])
 match_failed = compile_matchers([ ('FAILED', b'^FAILED: [^:]+:[0-9]+:(?P<n>test\S*)') ])
+match_allpassed = compile_matchers([ (None, b'^All [0-9]+ tests passed$')])
+
 
 def scan_output(po, matchers = match_passed ) :
         out = {}
@@ -146,6 +148,9 @@ def scan_output(po, matchers = match_passed ) :
                         err.append(NoMatch("unmatched output line", line))
                         continue
 
+                if not mname:
+                        continue
+
                 name = m.group('n').decode('utf-8');
                 if name in out :
                         err.append( DuplicateTest(
@@ -160,7 +165,7 @@ def scan_output(po, matchers = match_passed ) :
 # runner -----------------------------------------------------
 
 class Runner :
-        matchers = match_passed
+        matchers = match_passed + match_allpassed
         command_pre = ['valgrind', '-q', '--leak-check=yes']
         def __init__(s, command, source) :
                 s.data = RunData(s.command_pre + list(command), source)
