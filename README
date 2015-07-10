@@ -29,9 +29,9 @@ ELM is documented in elm.h; it is responsible for:
 
 - Malloc Wrapping
         Very few programs try to recover from a failed malloc(), but they have
-        to check for it anyway.  ELM's wrappers call malloc for your and fail
-        gracefully when the result is NULL.  The wrappers themselves never
-        return NULL.
+        to check for it anyway.  ELM's wrappers call malloc for you, and let
+        you fail gracefully when the result is NULL.  The wrappers themselves
+        never return NULL.
 
 ELM and 0unit work well together, but do not have to be used together.  They
 also do not have external dependencies (beyond the compilation tools, the OS

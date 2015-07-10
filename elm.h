@@ -452,14 +452,12 @@ extern int log_error(Logger *lg, Error *err);
   allocation (running out of virtual address space).
 
   MALLOC() just wraps malloc(), except that it never returns NULL.  If malloc()
-  fails, the program simply exits with a detailed error message.  This saves
-  you from writing error detection code for events that are very rare and
-  almost impossible to recover from.
+  fails, the program panics with the special nomem error type.  Like any
+  other panic, this error is catchable.
 
   If you do detect an out of memory condition yourself, but you want to treat
-  it in the same way as a failed MALLOC(), you can call PANIC_NOMEM().  In
-  future it will be possible to trap this error using TRY(), bit for now this
-  error is always fatal.
+  it in the same way as a failed MALLOC(), you can call PANIC_NOMEM().
+  ERROR_NOMEM() returns an instance of the nomem error without panicing.
 
   ZALLOC() is the same as MALLOC() except it zeros the allocated memory.
 */
