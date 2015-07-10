@@ -61,7 +61,7 @@
 
 #ifndef ELM_VERSION
 //#define ELM_VERSION "elm0-  0.  7    ."  // post-release
-#define ELM_VERSION "elm0-  0.  7."     // exact-release
+#define ELM_VERSION "elm0-  0.  7.  1."     // exact-release
 //#define ELM_VERSION "elm0-  0.  7-"  // pre-release
 #endif
 
