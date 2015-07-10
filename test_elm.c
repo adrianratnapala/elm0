@@ -627,6 +627,37 @@ static int test_try_panic()
         PASS();
 }
 
+static int test_panic_if()
+{
+        PanicReturn ret;
+        Error *err;
+
+        if(err = TRY(ret)) {
+                log_error(dbg_log, err);
+                destroy_error(err);
+                CHK(!"Caught unexpected panic.");
+        } else {
+                panic_if(NULL);
+                NO_WORRIES(ret);
+        }
+        CHK(!err);
+
+        Error *const e_worry = ERROR("This is a worry");
+
+        if(err = TRY(ret)) {
+                // We got the expected error.
+                CHK(err == e_worry);
+        } else {
+                panic_if(e_worry);
+                NO_WORRIES(ret);
+        }
+        if(!err)
+                FAIL("Expected to catch an error, but did not.");
+        destroy_error(err);
+
+        PASS();
+}
+
 
 // -- Main -----------------------------
 
@@ -638,6 +669,8 @@ int main(int argc, const char **argv)
         test_error_format();
         test_keep_first_error();
         test_simple_custom_error();
+
+        test_panic_if();
 
         test_system_error();
         test_variadic_system_error();

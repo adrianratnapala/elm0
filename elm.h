@@ -252,6 +252,13 @@ extern int sys_error(Error *e, char **zname, char **zmsg);
 /* You can panic using an valid (and non-NULL) error object by calling. */
 extern void panic(Error *e);
 
+/* panic_if is like panic() except it is a no-op if the argument is NULL. */
+static inline void panic_if(Error *e)
+{
+        if(e)
+                panic(e);
+}
+
 /*
    Or you can create a new error in analogy to ERROR_WITH and ERROR, and then
    immediately panic with it.
