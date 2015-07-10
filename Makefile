@@ -46,7 +46,7 @@ clean:
 	rm -f $(BUILD_DIR)/*.o
 
 test: test_progs
-	TEST_DIR=$(BUILD_DIR) ./n0run.py test_elm.c ./elm-test ;\
+	TEST_DIR=$(BUILD_DIR) ./n0run.py test_elm.c ./elm-test &&\
 	TEST_DIR=$(BUILD_DIR) ./elm-fail-run.py
 
 lib%.a: %.o

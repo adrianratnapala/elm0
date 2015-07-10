@@ -21,7 +21,7 @@ def warn(msg, x = None , errno=1, txt='warning') :
         return errno
 
 def die(msg, x = None , errno=1) :
-        warn(msg, x, errno, 'error')
+        warn("[%d] %s" % (errno, msg), x, errno, 'error')
         sys.exit(errno)
 
 class Error(Exception) : pass
